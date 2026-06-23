@@ -22,7 +22,7 @@ import av
 import requests
 import rq
 from django.conf import settings
-from django.db import transaction
+from django.db import connection, transaction
 from django.forms.models import model_to_dict
 from rest_framework.serializers import ValidationError
 
@@ -625,7 +625,7 @@ def _create_task_manifest_from_cloud_data(
     regular_images, related_images = find_related_images(
         sorted_media,
         # backward compatibility, deprecated in https://github.com/cvat-ai/cvat/pull/9757
-        is_scene_path=(lambda p: not "related_images" in p.parts),
+        is_scene_path=(lambda p: "related_images" not in p.parts),
     )
     sorted_media = [f for f in sorted_media if f in regular_images]
 
@@ -804,7 +804,7 @@ def _allocate_honeypots(
         )
         rng.shuffle(non_pool_frames)
 
-        validation_frame_counts = {f: 0 for f in pool_frames}
+        validation_frame_counts = dict.fromkeys(pool_frames, 0)
         frame_selector = HoneypotFrameSelector(validation_frame_counts, rng=rng)
 
         # Don't use the same rng as for frame ordering to simplify random_seed maintenance in future
@@ -1554,6 +1554,18 @@ def _create_audio_task_media_descriptors(
     return audio
 
 
+def _get_cloud_storage_by_id_for_share(_id: int) -> models.CloudStorage:
+    table_name = connection.ops.quote_name(models.CloudStorage._meta.db_table)
+
+    with connection.cursor() as cursor:
+        cursor.execute(
+            f"SELECT id FROM {table_name} WHERE id = %s FOR SHARE",
+            [_id],
+        )
+
+    return models.CloudStorage.objects.get(pk=_id)
+
+
 @transaction.atomic
 def create_thread(
     db_task: int | models.Task,
@@ -1562,7 +1574,17 @@ def create_thread(
     is_backup_restore: bool = False,
 ) -> None:
     if isinstance(db_task, int):
-        db_task = models.Task.objects.select_for_update().get(pk=db_task)
+        db_task = (
+            models.Task.objects.exclude(data=None)
+            .select_related("data")
+            .select_for_update(of=("self", "data"))
+            .get(pk=db_task)
+        )
+
+    if db_task.data.cloud_storage_id is not None:
+        db_task.data.cloud_storage = _get_cloud_storage_by_id_for_share(
+            _id=db_task.data.cloud_storage_id,
+        )
 
     slogger.glob.info("create task #{}".format(db_task.id))
 
@@ -1918,7 +1940,7 @@ def create_thread(
 
         # validate the sorting
         for file_path in sorted_media_files:
-            if not file_path in extractor:
+            if file_path not in extractor:
                 raise ValidationError(f"Can't find file '{file_path.name}' in the input files")
 
         media_files = sorted_media_files.copy()

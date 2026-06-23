@@ -25,7 +25,9 @@ from rest_framework.reverse import reverse
 from rq import Callback
 from rq.job import JobStatus as RQJobStatus
 
-import cvat.apps.dataset_manager as dm
+from cvat.apps.dataset_manager import project as dm_project
+from cvat.apps.dataset_manager import task as dm_task
+from cvat.apps.dataset_manager import views as dm_views
 from cvat.apps.dataset_manager.util import TmpDirManager, get_export_cache_lock
 from cvat.apps.dataset_manager.views import get_export_callback
 from cvat.apps.engine.backup import (
@@ -295,7 +297,7 @@ class DatasetExporter(BaseResourceExporter):
     def validate_request(self):
         super().validate_request()
 
-        format_desc = {f.DISPLAY_NAME: f for f in dm.views.get_export_formats()}.get(
+        format_desc = {f.DISPLAY_NAME: f for f in dm_views.get_export_formats()}.get(
             self.export_args.format
         )
         if format_desc is None:
@@ -626,12 +628,12 @@ class DatasetImporter(BaseResourceImporter):
         if not isinstance(self.db_instance, Project):
             import_mode_param = self.request.query_params.get(
                 "import_mode",
-                dm.task.AnnotationImportMode.REPLACE,
+                dm_task.AnnotationImportMode.REPLACE,
             )
             try:
-                import_mode = dm.task.AnnotationImportMode(import_mode_param).value
+                import_mode = dm_task.AnnotationImportMode(import_mode_param).value
             except ValueError as ex:
-                allowed_values = ", ".join(mode.value for mode in dm.task.AnnotationImportMode)
+                allowed_values = ", ".join(mode.value for mode in dm_task.AnnotationImportMode)
                 raise serializers.ValidationError(
                     f"Invalid import_mode={import_mode_param!r}. Allowed: {allowed_values}"
                 ) from ex
@@ -658,7 +660,7 @@ class DatasetImporter(BaseResourceImporter):
 
     def _init_callback_with_params(self):
         if isinstance(self.db_instance, Project):
-            self.callback = dm.project.import_dataset_as_project
+            self.callback = dm_project.import_dataset_as_project
             self.callback_args = (
                 str(self.tmp_dir / self.import_args.filename),
                 self.db_instance.pk,
@@ -666,7 +668,7 @@ class DatasetImporter(BaseResourceImporter):
                 self.import_args.conv_mask_to_poly,
             )
         elif isinstance(self.db_instance, Task):
-            self.callback = dm.task.import_task_annotations
+            self.callback = dm_task.import_task_annotations
             self.callback_args = (
                 str(self.tmp_dir / self.import_args.filename),
                 self.db_instance.pk,
@@ -676,7 +678,7 @@ class DatasetImporter(BaseResourceImporter):
             self.callback_kwargs = {"import_mode": self.import_args.import_mode}
         else:
             assert isinstance(self.db_instance, Job)
-            self.callback = dm.task.import_job_annotations
+            self.callback = dm_task.import_job_annotations
             self.callback_args = (
                 str(self.tmp_dir / self.import_args.filename),
                 self.db_instance.pk,
@@ -688,7 +690,7 @@ class DatasetImporter(BaseResourceImporter):
     def validate_request(self):
         super().validate_request()
 
-        format_desc = {f.DISPLAY_NAME: f for f in dm.views.get_import_formats()}.get(
+        format_desc = {f.DISPLAY_NAME: f for f in dm_views.get_import_formats()}.get(
             self.import_args.format
         )
         if format_desc is None:
