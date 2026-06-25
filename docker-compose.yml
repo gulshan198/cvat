@@ -88,17 +88,12 @@ services:
       ADAPTIVE_AUTO_ANNOTATION: 'false'
       NUMPROCS: 2
       CVAT_ANALYTICS: '0'
-      CVAT_BASE_URL:
+      CVAT_HOST: ${CVAT_HOST:-localhost}
+      CVAT_BASE_URL: ${CVAT_BASE_URL:-}
       ONE_RUNNING_JOB_IN_QUEUE_PER_USER:
     command: init run server nginx
-    labels:
-      traefik.enable: "true"
-      traefik.http.services.cvat.loadbalancer.server.port: "8080"
-      traefik.http.routers.cvat.rule:
-        Host(`${CVAT_HOST:-localhost}`) &&
-        (PathPrefix(`/api/`) || PathPrefix(`/static/`) || PathPrefix(`/admin`)
-          || PathPrefix(`/django-rq`))
-      traefik.http.routers.cvat.entrypoints: web
+    ports:
+      - 127.0.0.1:${CVAT_SERVER_PORT:-8080}:8080
     volumes:
       - cvat_data:/home/django/data
       - cvat_keys:/home/django/keys
@@ -198,59 +193,10 @@ services:
     restart: always
     depends_on:
       - cvat_server
-    labels:
-      traefik.enable: "true"
-      traefik.http.services.cvat-ui.loadbalancer.server.port: "8000"
-      traefik.http.routers.cvat-ui.rule: Host(`${CVAT_HOST:-localhost}`)
-      traefik.http.routers.cvat-ui.entrypoints: web
-    networks:
-      - cvat
-
-  traefik:
-    image: traefik:v3.6
-    container_name: traefik
-    restart: always
     ports:
-      - ${CVAT_HTTP_PORT:-8081}:8080
-      - ${CVAT_DASHBOARD_PORT:-8091}:8090
-    environment:
-      CVAT_HOST: ${CVAT_HOST:-localhost}
-
-      TRAEFIK_ACCESSLOG_FORMAT: json
-      TRAEFIK_ACCESSLOG_FIELDS_DEFAULTMODE: drop
-      TRAEFIK_ACCESSLOG_FIELDS_NAMES_ClientHost: keep
-      TRAEFIK_ACCESSLOG_FIELDS_NAMES_DownstreamContentSize: keep
-      TRAEFIK_ACCESSLOG_FIELDS_NAMES_DownstreamStatus: keep
-      TRAEFIK_ACCESSLOG_FIELDS_NAMES_Duration: keep
-      TRAEFIK_ACCESSLOG_FIELDS_NAMES_RequestHost: keep
-      TRAEFIK_ACCESSLOG_FIELDS_NAMES_RequestMethod: keep
-      TRAEFIK_ACCESSLOG_FIELDS_NAMES_RequestPath: keep
-      TRAEFIK_ACCESSLOG_FIELDS_NAMES_RequestPort: keep
-      TRAEFIK_ACCESSLOG_FIELDS_NAMES_RequestProtocol: keep
-      TRAEFIK_ACCESSLOG_FIELDS_NAMES_RouterName: keep
-      TRAEFIK_ACCESSLOG_FIELDS_NAMES_StartUTC: keep
-
-      TRAEFIK_LOG_FORMAT: json
-      TRAEFIK_ENTRYPOINTS_web_ADDRESS: :8080
-      TRAEFIK_PROVIDERS_DOCKER_EXPOSEDBYDEFAULT: "false"
-      TRAEFIK_PROVIDERS_DOCKER_NETWORK: cvat
-    # Uncomment to get Traefik dashboard
-    #   TRAEFIK_API_DASHBOARD: "true"
-    #   TRAEFIK_ENTRYPOINTS_dashboard_ADDRESS: :8090
-    # labels:
-    #   traefik.enable: "true"
-    #   traefik.http.routers.dashboard.entrypoints: dashboard
-    #   traefik.http.routers.dashboard.service: api@internal
-    #   traefik.http.routers.dashboard.rule: Host(`${CVAT_HOST:-localhost}`)
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - 127.0.0.1:${CVAT_UI_PORT:-8000}:8080
     networks:
       - cvat
-    logging:
-      driver: "json-file"
-      options:
-        max-size: 100m
-        max-file: "10"
 
   cvat_opa:
     container_name: cvat_opa
