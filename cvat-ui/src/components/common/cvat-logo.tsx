@@ -3,11 +3,12 @@
 // SPDX-License-Identifier: MIT
 
 import React from 'react';
-import { useSelector } from 'react-redux';
-import { CombinedState } from 'reducers';
+// import { useSelector } from 'react-redux';
+// import { CombinedState } from 'reducers';
 
 function CVATLogo(): JSX.Element {
-    const logo = useSelector((state: CombinedState) => state.about.server.logoURL);
+    // const logo = useSelector((state: CombinedState) => state.about.server.logoURL);
+    const logo = "https://app.guardex.ai/full-text-logo.png";
 
     return (
         <div className='cvat-logo-icon'>
