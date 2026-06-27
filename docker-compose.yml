@@ -195,6 +195,8 @@ services:
       - cvat_server
     ports:
       - 127.0.0.1:${CVAT_UI_PORT:-8000}:8080
+    volumes:
+      - ./cvat-ui/react_nginx.conf:/etc/nginx/conf.d/default.conf:ro
     networks:
       - cvat
 
