@@ -229,6 +229,10 @@ module.exports = (env, argv = {}) => {
                         from: 'plugins/**/assets/*.(onnx|js)',
                         to  : 'assets/[name][ext]',
                     },
+                    {
+                        from: 'src/assets/favicon.ico',
+                        to: 'favicon.ico',
+                    },
                 ],
             }),
         ],
