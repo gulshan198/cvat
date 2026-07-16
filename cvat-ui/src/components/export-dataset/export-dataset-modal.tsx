@@ -115,6 +115,7 @@ function ExportDatasetModal(props: Readonly<StateToProps>): JSX.Element {
     }, shallowEqual);
 
     const isBulkMode = selectedIds.length > 1;
+    const isJobExport = instanceType === 'job';
     const [selectedInstances, setSelectedInstances] = useState<ProjectOrTaskOrJob[]>([]);
     useEffect(() => {
         if (isBulkMode) {
@@ -138,21 +139,15 @@ function ExportDatasetModal(props: Readonly<StateToProps>): JSX.Element {
 
     useEffect(() => {
         let newInstanceType = '';
-        let initialSelectedFormat: string | undefined;
         if (instance instanceof Project) {
             newInstanceType = 'project';
-        } else if (instance instanceof Task || instance instanceof Job) {
-            if (instance instanceof Task) {
-                newInstanceType = 'task';
-            } else {
-                newInstanceType = 'job';
-            }
-            if (instance.mode === 'interpolation' && instance.dimension === '2d') {
-                initialSelectedFormat = 'CVAT for video 1.1';
-            } else if (instance.mode === 'annotation' && instance.dimension === '2d') {
-                initialSelectedFormat = 'CVAT for images 1.1';
-            }
+        } else if (instance instanceof Task) {
+            newInstanceType = 'task';
+        } else if (instance instanceof Job) {
+            newInstanceType = 'job';
         }
+
+        const initialSelectedFormat = 'Ultralytics YOLO Oriented Bounding Boxes 1.0';
         form.setFieldsValue({ selectedFormat: initialSelectedFormat });
         setSelectedFormat(initialSelectedFormat);
         setNameTemplate(`dataset_${newInstanceType}_{{id}}`);
@@ -198,9 +193,12 @@ function ExportDatasetModal(props: Readonly<StateToProps>): JSX.Element {
                             exportDatasetAsync(
                                 inst,
                                 values.selectedFormat as string,
-                                values.saveImages,
-                                false, // always custom storage in bulk
-                                new Storage({
+                                isJobExport ? false : values.saveImages,
+                                isJobExport ? true : false,
+                                isJobExport ? new Storage({
+                                    location: inst.targetStorage.location,
+                                    cloudStorageId: inst.targetStorage.cloudStorageId,
+                                }) : new Storage({
                                     location: values.targetStorage?.location,
                                     cloudStorageId: values.targetStorage?.cloudStorageId,
                                 }),
@@ -213,7 +211,7 @@ function ExportDatasetModal(props: Readonly<StateToProps>): JSX.Element {
                     ),
                 ));
                 closeModal();
-                const resource = values.saveImages ? 'Dataset' : 'Annotations';
+                const resource = (isJobExport ? false : values.saveImages) ? 'Dataset' : 'Annotations';
                 const description =
                     `Bulk ${resource.toLowerCase()} export was started. ` +
                     'You can check progress and download the file [here](/requests).';
@@ -227,13 +225,15 @@ function ExportDatasetModal(props: Readonly<StateToProps>): JSX.Element {
                 return;
             }
             // have to validate format before so it would not be undefined
+            const saveImages = isJobExport ? false : values.saveImages;
+            const useDefaultStorage = isJobExport ? true : useDefaultTargetStorage;
             dispatch(
                 exportDatasetAsync(
                     instance as ProjectOrTaskOrJob,
                     values.selectedFormat as string,
-                    values.saveImages,
-                    useDefaultTargetStorage,
-                    useDefaultTargetStorage ? new Storage({
+                    saveImages,
+                    useDefaultStorage,
+                    useDefaultStorage ? new Storage({
                         location: defaultStorageLocation,
                         cloudStorageId: defaultStorageCloudId,
                     }) : new Storage(targetStorage),
@@ -241,7 +241,7 @@ function ExportDatasetModal(props: Readonly<StateToProps>): JSX.Element {
                 ),
             );
             closeModal();
-            const resource = values.saveImages ? 'Dataset' : 'Annotations';
+            const resource = saveImages ? 'Dataset' : 'Annotations';
             const description = `${resource} export was started for ${instanceType}. ` +
             'You can check progress and download the file [here](/requests).';
             Notification.info({
@@ -255,6 +255,7 @@ function ExportDatasetModal(props: Readonly<StateToProps>): JSX.Element {
         [
             instance,
             instanceType,
+            isJobExport,
             useDefaultTargetStorage,
             defaultStorageLocation,
             defaultStorageCloudId,
@@ -335,16 +336,18 @@ function ExportDatasetModal(props: Readonly<StateToProps>): JSX.Element {
                             )}
                     </Select>
                 </Form.Item>
-                <Space>
-                    <Form.Item
-                        className='cvat-modal-export-switch-use-default-storage'
-                        name='saveImages'
-                        valuePropName='checked'
-                    >
-                        <Switch className='cvat-modal-export-save-images' />
-                    </Form.Item>
-                    <Text strong>Save images</Text>
-                </Space>
+                {!isJobExport && (
+                    <Space>
+                        <Form.Item
+                            className='cvat-modal-export-switch-use-default-storage'
+                            name='saveImages'
+                            valuePropName='checked'
+                        >
+                            <Switch className='cvat-modal-export-save-images' />
+                        </Form.Item>
+                        <Text strong>Save images</Text>
+                    </Space>
+                )}
                 {isBulkMode ? (
                     <Form.Item label={<Text strong>Name template</Text>} required>
                         <Input
@@ -377,20 +380,22 @@ function ExportDatasetModal(props: Readonly<StateToProps>): JSX.Element {
                         />
                     </Form.Item>
                 )}
-                <TargetStorageField
-                    instanceId={instance ? instance.id : null}
-                    switchDescription='Use default settings'
-                    switchHelpMessage={helpMessage}
-                    useDefaultStorage={isBulkMode ? false : useDefaultTargetStorage}
-                    storageDescription='Specify target storage for export dataset'
-                    locationValue={targetStorage.location}
-                    onChangeUseDefaultStorage={isBulkMode ? undefined : (value: boolean) => {
-                        setUseDefaultTargetStorage(value);
-                    }}
-                    onChangeStorage={(value: StorageData) => setTargetStorage(value)}
-                    onChangeLocationValue={(value: StorageLocation) => { setTargetStorage({ location: value }); }}
-                    disableSwitch={isBulkMode}
-                />
+                {!isJobExport && (
+                    <TargetStorageField
+                        instanceId={instance ? instance.id : null}
+                        switchDescription='Use default settings'
+                        switchHelpMessage={helpMessage}
+                        useDefaultStorage={isBulkMode ? false : useDefaultTargetStorage}
+                        storageDescription='Specify target storage for export dataset'
+                        locationValue={targetStorage.location}
+                        onChangeUseDefaultStorage={isBulkMode ? undefined : (value: boolean) => {
+                            setUseDefaultTargetStorage(value);
+                        }}
+                        onChangeStorage={(value: StorageData) => setTargetStorage(value)}
+                        onChangeLocationValue={(value: StorageLocation) => { setTargetStorage({ location: value }); }}
+                        disableSwitch={isBulkMode}
+                    />
+                )}
             </Form>
         </Modal>
     );

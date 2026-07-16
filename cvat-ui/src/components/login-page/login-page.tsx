@@ -3,13 +3,15 @@
 //
 // SPDX-License-Identifier: MIT
 
+import './styles.scss';
+
 import React from 'react';
 import { RouteComponentProps, useHistory } from 'react-router';
 import { withRouter } from 'react-router-dom';
-import { Row, Col } from 'antd/lib/grid';
 
-import SigningLayout, { formSizes } from 'components/signing-common/signing-layout';
 import LoginForm, { LoginData } from './login-form';
+
+const GUARDEX_LOGO = 'https://app.guardex.ai/full-text-logo.png';
 
 interface LoginPageComponentProps {
     fetching: boolean;
@@ -30,24 +32,25 @@ function LoginPageComponent(props: LoginPageComponentProps & RouteComponentProps
     if (hasEmailVerificationBeenSent) {
         history.push('/auth/email-verification-sent');
     }
+
     return (
-        <SigningLayout>
-            <Col {...formSizes.wrapper}>
-                <Row justify='center'>
-                    <Col {...formSizes.form}>
-                        <LoginForm
-                            fetching={fetching}
-                            renderResetPassword={renderResetPassword}
-                            renderRegistrationComponent={renderRegistrationComponent}
-                            renderBasicLoginComponent={renderBasicLoginComponent}
-                            onSubmit={(loginData: LoginData): void => {
-                                onLogin(loginData.credential, loginData.password);
-                            }}
-                        />
-                    </Col>
-                </Row>
-            </Col>
-        </SigningLayout>
+        <div className='cvat-guardex-login'>
+            <div className='cvat-guardex-login-card'>
+                <div className='cvat-guardex-login-header'>
+                    <img src={GUARDEX_LOGO} alt='Guardex' />
+                    <p>Sign in to continue</p>
+                </div>
+                <LoginForm
+                    fetching={fetching}
+                    renderResetPassword={renderResetPassword}
+                    renderRegistrationComponent={renderRegistrationComponent}
+                    renderBasicLoginComponent={renderBasicLoginComponent}
+                    onSubmit={(loginData: LoginData): void => {
+                        onLogin(loginData.credential, loginData.password);
+                    }}
+                />
+            </div>
+        </div>
     );
 }
 

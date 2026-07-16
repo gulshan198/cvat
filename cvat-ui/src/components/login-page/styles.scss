@@ -1,0 +1,150 @@
+// Copyright (C) CVAT.ai Corporation
+//
+// SPDX-License-Identifier: MIT
+
+$guardex-red: #ea384c;
+$guardex-bg: #f8fafc;
+$guardex-text: #0f172a;
+$guardex-muted: #64748b;
+$guardex-border: #e2e8f0;
+$guardex-error-bg: #fef2f3;
+$guardex-shadow: 0 4px 20px -4px hsl(220 9% 15% / 0.1);
+
+.cvat-guardex-login {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    background-color: $guardex-bg;
+    background-image: linear-gradient(
+        135deg,
+        #f8fafc 0%,
+        #f1f5f9 50%,
+        #fafafa 100%
+    );
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.cvat-guardex-login-card {
+    width: 100%;
+    max-width: 384px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: $guardex-shadow;
+    border: 1px solid rgba(15, 23, 42, 0.05);
+    padding: 32px 28px 28px;
+}
+
+.cvat-guardex-login-header {
+    text-align: center;
+    margin-bottom: 28px;
+
+    img {
+        height: 32px;
+        width: auto;
+        max-width: 160px;
+        object-fit: contain;
+        display: block;
+        margin: 0 auto 12px;
+    }
+
+    p {
+        margin: 0;
+        color: $guardex-muted;
+        font-size: 14px;
+        line-height: 1.4;
+    }
+}
+
+.cvat-guardex-login-form {
+    .ant-form-item {
+        margin-bottom: 16px;
+    }
+
+    .ant-form-item-label {
+        padding-bottom: 4px;
+
+        > label {
+            color: $guardex-text;
+            font-size: 14px;
+            font-weight: 500;
+            height: auto;
+        }
+    }
+
+    .ant-form-item-explain-error {
+        font-size: 12px;
+        margin-top: 4px;
+    }
+
+    .ant-input,
+    .ant-input-affix-wrapper {
+        height: 40px;
+        border-radius: 6px;
+        border-color: $guardex-border;
+        font-size: 14px;
+        padding: 4px 12px;
+        color: $guardex-text;
+        box-shadow: none;
+
+        &:hover {
+            border-color: #cbd5e1;
+        }
+
+        &:focus,
+        &.ant-input-affix-wrapper-focused {
+            border-color: $guardex-red;
+            box-shadow: 0 0 0 3px rgba(234, 56, 76, 0.15);
+        }
+    }
+
+    .ant-input-password {
+        .ant-input {
+            height: auto;
+            border: none;
+            box-shadow: none;
+            padding: 0;
+
+            &:focus {
+                box-shadow: none;
+            }
+        }
+    }
+
+    .ant-input-affix-wrapper > input.ant-input {
+        height: auto;
+    }
+}
+
+.cvat-guardex-login-submit {
+    width: 100%;
+    height: 40px;
+    margin-top: 8px;
+    border: none;
+    border-radius: 6px;
+    background-color: $guardex-red;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    box-shadow: none;
+
+    &:hover,
+    &:focus {
+        background-color: #d32f41 !important;
+        color: #ffffff !important;
+        border: none !important;
+    }
+
+    &:disabled,
+    &.ant-btn-loading {
+        background-color: $guardex-red !important;
+        color: #ffffff !important;
+        opacity: 0.75;
+    }
+}
+
+.cvat-guardex-login-plugins {
+    margin-top: 12px;
+}
