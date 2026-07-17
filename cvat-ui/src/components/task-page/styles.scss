@@ -30,6 +30,15 @@
             }
         }
 
+        .cvat-task-details-frames-summary,
+        .cvat-task-details-data-source-path {
+            margin-top: $grid-unit-size * 0.5;
+        }
+
+        .cvat-task-details-data-source-path {
+            word-break: break-all;
+        }
+
         > div:nth-child(2) {
             > div:nth-child(2) {
                 padding-left: 20px;

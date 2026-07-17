@@ -140,7 +140,10 @@ const componentShortcuts = {
     DELETE_OBJECT_STANDARD_WORKSPACE: {
         name: 'Delete object',
         description: 'Delete an active object. Use shift to force delete of locked objects',
-        sequences: ['del', 'shift+del'],
+        // Handled via a native keydown listener (Mac Delete key is Backspace).
+        // Keep displayedSequences for the shortcuts help / object item tooltip.
+        sequences: [],
+        displayedSequences: ['backspace', 'del', 'shift+backspace', 'shift+del'],
         scope: ShortcutScope.OBJECTS_SIDEBAR,
     },
     TO_BACKGROUND: {
@@ -170,7 +173,7 @@ const componentShortcuts = {
     COPY_SHAPE: {
         name: 'Copy shape',
         description: 'Copy shape to CVAT internal clipboard',
-        sequences: ['ctrl+c'],
+        sequences: ['ctrl+c', 'command+c'],
         scope: ShortcutScope.OBJECTS_SIDEBAR,
     },
     RUN_ANNOTATIONS_ACTION: {
@@ -386,10 +389,14 @@ class ObjectsListContainer extends React.PureComponent<Props, State> {
     public componentDidMount(): void {
         this.updateObjects();
         window.addEventListener(OBJECTS_SIDEBAR_OPEN_Z_LAYER_EVENT, this.onOpenZLayerInSidebar);
+        // Native listener: MacBooks map the Delete key to Backspace, which is more
+        // reliable than Mousetrap's 'del' binding alone.
+        window.addEventListener('keydown', this.onDeleteKeyDown, true);
     }
 
     public componentWillUnmount(): void {
         window.removeEventListener(OBJECTS_SIDEBAR_OPEN_Z_LAYER_EVENT, this.onOpenZLayerInSidebar);
+        window.removeEventListener('keydown', this.onDeleteKeyDown, true);
     }
 
     public componentDidUpdate(): void {
@@ -399,6 +406,41 @@ class ObjectsListContainer extends React.PureComponent<Props, State> {
             this.updateObjects();
         }
     }
+
+    private onDeleteKeyDown = (event: KeyboardEvent): void => {
+        if (event.key !== 'Backspace' && event.key !== 'Delete') {
+            return;
+        }
+
+        const target = event.target as HTMLElement | null;
+        const tag = target?.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target?.isContentEditable) {
+            return;
+        }
+
+        if (Array.from(window.document.getElementsByClassName('ant-modal'))
+            .some((el) => (el as HTMLElement).style.display !== 'none')) {
+            return;
+        }
+
+        const {
+            activatedStateID, objectStates, removeObject,
+        } = this.props;
+        if (activatedStateID === null) {
+            return;
+        }
+
+        const state = objectStates.find(
+            (objectState: ObjectState): boolean => objectState.clientID === activatedStateID,
+        );
+        if (!state) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        removeObject(state, event.shiftKey);
+    };
 
     private updateObjects = (): void => {
         const {
@@ -716,7 +758,8 @@ class ObjectsListContainer extends React.PureComponent<Props, State> {
                     updateAnnotations([state]);
                 }
             },
-            COPY_SHAPE: () => {
+            COPY_SHAPE: (event?: KeyboardEvent) => {
+                preventDefault(event);
                 const state = activatedState(true);
                 if (state) {
                     copyShape(state);

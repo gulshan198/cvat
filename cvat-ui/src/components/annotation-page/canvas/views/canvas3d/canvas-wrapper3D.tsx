@@ -26,6 +26,7 @@ import {
     getDataFailed,
     canvasErrorOccurred,
     collapseObjectItems,
+    repeatDrawShapeAsync,
 } from 'actions/annotation-actions';
 import {
     ActiveControl,
@@ -160,6 +161,7 @@ interface DispatchToProps {
     onActivateObject: (activatedStateID: number | null) => void;
     onExpandObject(objectState: ObjectState): void;
     updateActiveControl: (activeControl: ActiveControl) => void;
+    onRepeatDrawShape(): void;
     onUpdateContextMenu(visible: boolean, left: number, top: number, type: ContextMenuType, pointID?: number): void;
     onGetDataFailed(error: Error): void;
     onCanvasErrorOccurred(error: Error): void;
@@ -265,6 +267,9 @@ function mapDispatchToProps(dispatch: any): DispatchToProps {
         },
         updateActiveControl(activeControl: ActiveControl): void {
             dispatch(updateActiveControlAction(activeControl));
+        },
+        onRepeatDrawShape(): void {
+            dispatch(repeatDrawShapeAsync());
         },
         onGetDataFailed(error: Error): void {
             dispatch(getDataFailed(error));
@@ -604,6 +609,7 @@ const Canvas3DWrapperComponent = React.memo((props: Props): null => {
         onResetCanvas,
         onSetupCanvas,
         updateActiveControl,
+        onRepeatDrawShape,
         onCreateAnnotations,
         onMergeAnnotations,
         onSplitAnnotations,
@@ -656,12 +662,14 @@ const Canvas3DWrapperComponent = React.memo((props: Props): null => {
     };
 
     const onCanvasShapeDrawn = (event: any): void => {
-        if (!event.detail.continue) {
+        const { state, duration } = event.detail;
+        const isDrawnFromScratch = !state.label;
+        const stickyContinue = isDrawnFromScratch && !event.detail.continue;
+
+        if (!event.detail.continue && !stickyContinue) {
             updateActiveControl(ActiveControl.CURSOR);
         }
 
-        const { state, duration } = event.detail;
-        const isDrawnFromScratch = !state.label;
         if (isDrawnFromScratch) {
             jobInstance.logger.log(EventScope.drawObject, { count: 1, duration });
         } else {
@@ -675,6 +683,10 @@ const Canvas3DWrapperComponent = React.memo((props: Props): null => {
         state.zOrder = 0;
         const objectState = new cvat.classes.ObjectState(state);
         onCreateAnnotations([objectState]);
+
+        if (stickyContinue) {
+            setTimeout(() => onRepeatDrawShape(), 0);
+        }
     };
 
     const onCanvasClick = (e: MouseEvent): void => {

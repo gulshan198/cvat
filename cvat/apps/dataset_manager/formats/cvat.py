@@ -834,7 +834,7 @@ def dump_as_cvat_annotation(dumper, annotations: JobData | TaskData | ProjectDat
     dumper.open_root()
     dumper.add_meta(annotations.meta)
 
-    for frame_annotation in annotations.group_by_frame(include_empty=True):
+    for frame_annotation in annotations.group_by_frame(include_empty=False):
         frame_id = frame_annotation.frame
         image_attrs = OrderedDict([("id", str(frame_id)), ("name", frame_annotation.name)])
         if isinstance(annotations, ProjectData):

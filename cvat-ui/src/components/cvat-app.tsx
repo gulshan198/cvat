@@ -536,17 +536,35 @@ class CVATApplication extends React.PureComponent<CVATAppProps & RouteComponentP
                                         <Route exact path='/tasks/:tid/jobs/:jid' component={AnnotationPageContainer} />
                                         <Route exact path='/tasks/:tid/jobs/:jid/analytics' component={AnalyticsReportPage} />
                                         <Route exact path='/jobs' component={JobsPageComponent} />
-                                        <Route exact path='/cloudstorages' component={CloudStoragesPageComponent} />
-                                        <Route
-                                            exact
-                                            path='/cloudstorages/create'
-                                            component={CreateCloudStoragePageComponent}
-                                        />
-                                        <Route
-                                            exact
-                                            path='/cloudstorages/update/:id'
-                                            component={UpdateCloudStoragePageComponent}
-                                        />
+                                        {user.isStaff ? (
+                                            <Route exact path='/cloudstorages' component={CloudStoragesPageComponent} />
+                                        ) : (
+                                            <Route exact path='/cloudstorages'>
+                                                <Redirect to='/tasks' />
+                                            </Route>
+                                        )}
+                                        {user.isStaff ? (
+                                            <Route
+                                                exact
+                                                path='/cloudstorages/create'
+                                                component={CreateCloudStoragePageComponent}
+                                            />
+                                        ) : (
+                                            <Route exact path='/cloudstorages/create'>
+                                                <Redirect to='/tasks' />
+                                            </Route>
+                                        )}
+                                        {user.isStaff ? (
+                                            <Route
+                                                exact
+                                                path='/cloudstorages/update/:id'
+                                                component={UpdateCloudStoragePageComponent}
+                                            />
+                                        ) : (
+                                            <Route exact path='/cloudstorages/update/:id'>
+                                                <Redirect to='/tasks' />
+                                            </Route>
+                                        )}
                                         <Route
                                             exact
                                             path='/organizations/create'
@@ -560,13 +578,19 @@ class CVATApplication extends React.PureComponent<CVATAppProps & RouteComponentP
                                         <Route exact path='/requests' component={RequestsPage} />
                                         <Route exact path='/profile' component={ProfilePageComponent} />
                                         { routesToRender }
-                                        <Route
-                                            path='/models'
-                                        >
-                                            <Switch>
-                                                <Route exact path='/models' component={ModelsPageComponent} />
-                                            </Switch>
-                                        </Route>
+                                        {user.isStaff ? (
+                                            <Route
+                                                path='/models'
+                                            >
+                                                <Switch>
+                                                    <Route exact path='/models' component={ModelsPageComponent} />
+                                                </Switch>
+                                            </Route>
+                                        ) : (
+                                            <Route path='/models'>
+                                                <Redirect to='/tasks' />
+                                            </Route>
+                                        )}
                                         <Redirect
                                             push
                                             to={{

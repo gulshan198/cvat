@@ -20,11 +20,46 @@ import Preview from 'components/common/preview';
 import { cancelInferenceAsync } from 'actions/models-actions';
 import { CombinedState, ActiveInference } from 'reducers';
 import CVATTag, { TagType } from 'components/common/cvat-tag';
+import { ProviderType } from 'utils/enums';
 import UserSelector from './user-selector';
 import BugTrackerEditor from './bug-tracker-editor';
 import CloudStorageEditor from './cloud-storage-editor';
 import LabelsEditorComponent from '../labels-editor/labels-editor';
 import ProjectSubsetField from '../create-task-page/project-subset-field';
+
+function buildCloudStorageFallbackPath(cloudStorage: CloudStorage | null): string | null {
+    if (!cloudStorage?.resource) {
+        return null;
+    }
+
+    const bucket = cloudStorage.resource;
+    const prefix = (cloudStorage.prefix || '').replace(/^\/+|\/+$/g, '');
+    const path = prefix ? `${bucket}/${prefix}/` : `${bucket}/`;
+
+    switch (cloudStorage.providerType) {
+        case ProviderType.GOOGLE_CLOUD_STORAGE:
+            return `gs://${path}`;
+        case ProviderType.AWS_S3_BUCKET:
+            return `s3://${path}`;
+        case ProviderType.AZURE_CONTAINER:
+            return `azure://${path}`;
+        default:
+            return path;
+    }
+}
+
+function sourceFolderLabel(path: string): string {
+    if (path.startsWith('gs://')) {
+        return 'Source folder (GCS)';
+    }
+    if (path.startsWith('s3://')) {
+        return 'Source folder (S3)';
+    }
+    if (path.startsWith('azure://')) {
+        return 'Source folder (Azure)';
+    }
+    return 'Source folder';
+}
 
 interface OwnProps {
     task: Task;
@@ -38,6 +73,7 @@ interface OwnProps {
 interface StateToProps {
     activeInference: ActiveInference | null;
     project?: Project;
+    canEditAssignee: boolean;
 }
 
 interface DispatchToProps {
@@ -49,6 +85,7 @@ function mapStateToProps(state: CombinedState, own: OwnProps): StateToProps & Ow
         ...own,
         activeInference: state.models.inferences[own.task.id] ?? null,
         project: state.projects.current.find((project) => project.id === own.task.projectId),
+        canEditAssignee: !!state.auth.user?.isStaff,
     };
 }
 
@@ -127,11 +164,16 @@ class DetailsComponent extends React.PureComponent<Props, State> {
             taskMeta,
             cloudStorageInstance,
             onUpdateTaskMeta,
+            canEditAssignee,
         } = this.props;
         const { consensusEnabled } = this.state;
         const owner = taskInstance.owner ? taskInstance.owner.username : null;
         const assignee = taskInstance.assignee ? taskInstance.assignee : null;
         const created = dayjs(taskInstance.createdDate).format('MMMM Do YYYY');
+        const totalFrames = taskInstance.activeFrameCount ?? taskInstance.size ?? 0;
+        const annotatedFrames = Math.min(taskInstance.annotatedFrames ?? 0, totalFrames);
+        const dataSourcePath = taskInstance.dataSourcePath ||
+            buildCloudStorageFallbackPath(cloudStorageInstance);
         const assigneeSelect = (
             <UserSelector
                 value={assignee}
@@ -155,10 +197,29 @@ class DetailsComponent extends React.PureComponent<Props, State> {
                             </div>
                         )}
                         {consensusEnabled && <CVATTag type={TagType.CONSENSUS} />}
+                        <div className='cvat-task-details-frames-summary'>
+                            <Text type='secondary'>
+                                {`${annotatedFrames} / ${totalFrames} frames annotated`}
+                            </Text>
+                        </div>
+                        {dataSourcePath && (
+                            <div className='cvat-task-details-data-source-path'>
+                                <Text type='secondary'>
+                                    {`${sourceFolderLabel(dataSourcePath)}: `}
+                                </Text>
+                                <Text code copyable={{ text: dataSourcePath }}>
+                                    {dataSourcePath}
+                                </Text>
+                            </div>
+                        )}
                     </Col>
                     <Col>
                         <Text type='secondary'>Assigned to</Text>
-                        {assigneeSelect}
+                        {canEditAssignee ? assigneeSelect : (
+                            <div>
+                                <Text>{assignee ? assignee.username : '—'}</Text>
+                            </div>
+                        )}
                     </Col>
                 </Row>
                 <Row justify='end' className='cvat-task-details-cloud-storage'>

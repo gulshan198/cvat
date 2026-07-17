@@ -46,12 +46,14 @@ function ProjectActionsComponent(props: Readonly<Props>): JSX.Element {
         currentOrganization,
         projectsQuery,
         tasksQuery,
+        canEditAssignee,
     } = useSelector((state: CombinedState) => ({
         selectedIds: state.projects.selected,
         currentProjects: state.projects.current,
         currentOrganization: state.organizations.current as Organization | null,
         projectsQuery: state.projects.gettingQuery,
         tasksQuery: state.tasks.gettingQuery,
+        canEditAssignee: !!state.auth.user?.isStaff,
     }), shallowEqual);
 
     const isBulkMode = selectedIds.length > 1;
@@ -217,6 +219,7 @@ function ProjectActionsComponent(props: Readonly<Props>): JSX.Element {
             onBackupProject,
             onDeleteProject,
             selectedIds,
+            canEditAssignee,
         }, props);
     }
 

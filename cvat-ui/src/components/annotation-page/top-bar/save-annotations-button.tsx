@@ -20,8 +20,8 @@ import { SaveIcon } from 'icons';
 const componentShortcuts = {
     SAVE_JOB: {
         name: 'Save the job',
-        description: 'Submit unsaved changes of annotations to the server',
-        sequences: ['ctrl+s'],
+        description: 'Submit unsaved changes of annotations to the server and move to the next frame',
+        sequences: ['ctrl+s', 'command+s'],
         scope: ShortcutScope.ANNOTATION_PAGE,
     },
 };
@@ -40,7 +40,7 @@ function SaveAnnotationsButton() {
         SAVE_JOB: (event: KeyboardEvent | undefined) => {
             event?.preventDefault();
             if (!isSaving) {
-                dispatch(saveAnnotationsAsync());
+                dispatch(saveAnnotationsAsync({ advanceToNextFrame: true }));
             }
         },
     };
@@ -48,10 +48,10 @@ function SaveAnnotationsButton() {
     return (
         <>
             <GlobalHotKeys keyMap={subKeyMap(componentShortcuts, keyMap)} handlers={handlers} />
-            <CVATTooltip overlay={`Save current changes ${normKeyMap.SAVE_JOB}`}>
+            <CVATTooltip overlay={`Save current changes and go to next frame ${normKeyMap.SAVE_JOB}`}>
                 <Button
                     type='link'
-                    onClick={isSaving ? undefined : () => dispatch(saveAnnotationsAsync())}
+                    onClick={isSaving ? undefined : () => dispatch(saveAnnotationsAsync({ advanceToNextFrame: true }))}
                     className={isSaving ? 'cvat-annotation-header-save-button cvat-annotation-disabled-header-button' :
                         'cvat-annotation-header-save-button cvat-annotation-header-button'}
                 >

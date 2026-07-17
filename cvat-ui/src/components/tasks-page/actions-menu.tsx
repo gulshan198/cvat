@@ -53,6 +53,7 @@ function TaskActionsComponent(props: Readonly<Props>): JSX.Element {
         selectedIds,
         currentTasks,
         tasksQuery,
+        canEditAssignee,
     } = useSelector((state: CombinedState) => ({
         activeInference: state.models.inferences[taskInstance.id],
         mergingConsensus: state.consensus.actions.merging,
@@ -60,6 +61,7 @@ function TaskActionsComponent(props: Readonly<Props>): JSX.Element {
         selectedIds: state.tasks.selected,
         currentTasks: state.tasks.current,
         tasksQuery: state.tasks.gettingQuery,
+        canEditAssignee: !!state.auth.user?.isStaff,
     }), shallowEqual);
 
     const isBulkMode = selectedIds.length > 1;
@@ -258,6 +260,7 @@ function TaskActionsComponent(props: Readonly<Props>): JSX.Element {
             ),
             isConsensusEnabled: taskInstance.consensusEnabled,
             isMergingConsensusEnabled: mergingConsensus[`task_${taskInstance.id}`],
+            canEditAssignee,
             pluginActions,
             onMergeConsensusJobs: taskInstance.consensusEnabled ? onMergeConsensusJobs : null,
             onOpenBugTracker: taskInstance.bugTracker ? onOpenBugTracker : null,

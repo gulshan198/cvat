@@ -161,7 +161,6 @@ function HeaderComponent(props: Props): JSX.Element {
         settingsModalVisible,
         shortcutsModalVisible,
         switchSettingsShortcut,
-        isAnalyticsPluginActive,
         organizationFetching,
         currentOrganization,
         organizationsList,
@@ -440,18 +439,20 @@ function HeaderComponent(props: Props): JSX.Element {
                 >
                     Jobs
                 </Button>
-                <Button
-                    className={getButtonClassName('cloudstorages')}
-                    type='link'
-                    value='cloudstorages'
-                    href='/cloudstorages?page=1'
-                    onClick={(event: React.MouseEvent): void => {
-                        event.preventDefault();
-                        history.push('/cloudstorages');
-                    }}
-                >
-                    Cloud Storages
-                </Button>
+                {user.isStaff ? (
+                    <Button
+                        className={getButtonClassName('cloudstorages')}
+                        type='link'
+                        value='cloudstorages'
+                        href='/cloudstorages?page=1'
+                        onClick={(event: React.MouseEvent): void => {
+                            event.preventDefault();
+                            history.push('/cloudstorages');
+                        }}
+                    >
+                        Cloud Storages
+                    </Button>
+                ) : null}
                 <Button
                     className={getButtonClassName('requests')}
                     type='link'
@@ -464,29 +465,18 @@ function HeaderComponent(props: Props): JSX.Element {
                 >
                     Requests
                 </Button>
-                <Button
-                    className={getButtonClassName('models')}
-                    type='link'
-                    value='models'
-                    href='/models'
-                    onClick={(event: React.MouseEvent): void => {
-                        event.preventDefault();
-                        history.push('/models');
-                    }}
-                >
-                    Models
-                </Button>
-                {isAnalyticsPluginActive && user.hasAnalyticsAccess ? (
+                {user.isStaff ? (
                     <Button
-                        className={getButtonClassName('analytics', false)}
+                        className={getButtonClassName('models')}
                         type='link'
-                        href='/analytics'
+                        value='models'
+                        href='/models'
                         onClick={(event: React.MouseEvent): void => {
                             event.preventDefault();
-                            window.open('/analytics', '_blank');
+                            history.push('/models');
                         }}
                     >
-                        Analytics
+                        Models
                     </Button>
                 ) : null}
             </div>

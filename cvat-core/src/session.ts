@@ -577,6 +577,8 @@ export class Job extends Session {
         start_frame?: number;
         stop_frame?: number;
         frame_count?: number;
+        active_frame_count?: number;
+        annotated_frames?: number;
         project_id: number | null;
         project_name: string | null;
         guide_id: number | null;
@@ -609,6 +611,8 @@ export class Job extends Session {
             start_frame: undefined,
             stop_frame: undefined,
             frame_count: undefined,
+            active_frame_count: undefined,
+            annotated_frames: undefined,
             project_id: null,
             project_name: null,
             guide_id: null,
@@ -634,6 +638,9 @@ export class Job extends Session {
         this.#data.start_frame = initialData.start_frame ?? this.#data.start_frame;
         this.#data.stop_frame = initialData.stop_frame ?? this.#data.stop_frame;
         this.#data.frame_count = initialData.frame_count ?? this.#data.frame_count;
+        this.#data.active_frame_count = initialData.active_frame_count ??
+            this.#data.active_frame_count ?? initialData.frame_count ?? this.#data.frame_count;
+        this.#data.annotated_frames = initialData.annotated_frames ?? this.#data.annotated_frames ?? 0;
         this.#data.task_id = initialData.task_id ?? this.#data.task_id;
         this.#data.task_name = initialData.task_name ?? this.#data.task_name;
         this.#data.project_name = initialData.project_name ?? this.#data.project_name;
@@ -731,6 +738,14 @@ export class Job extends Session {
 
     public get frameCount(): number {
         return this.#data.frame_count;
+    }
+
+    public get activeFrameCount(): number {
+        return this.#data.active_frame_count ?? this.#data.frame_count;
+    }
+
+    public get annotatedFrames(): number {
+        return this.#data.annotated_frames ?? 0;
     }
 
     public get projectId(): number | null {
@@ -865,6 +880,9 @@ export class Task extends Session {
     public readonly id: number;
     public readonly status: TaskStatus;
     public readonly size: number;
+    public readonly annotatedFrames: number;
+    public readonly activeFrameCount: number;
+    public readonly dataSourcePath: string | null;
     public readonly mode: TaskMode | undefined;
     public readonly owner: User;
     public readonly createdDate: string;
@@ -921,6 +939,9 @@ export class Task extends Session {
             organization_id: undefined,
             status: undefined,
             size: undefined,
+            annotated_frames: undefined,
+            active_frame_count: undefined,
+            data_source_path: null,
             mode: undefined,
             owner: null,
             assignee: null,
@@ -1006,6 +1027,8 @@ export class Task extends Session {
                     start_frame: job.start_frame,
                     stop_frame: job.stop_frame,
                     frame_count: job.frame_count,
+                    active_frame_count: job.active_frame_count,
+                    annotated_frames: job.annotated_frames,
                     guide_id: job.guide_id,
                     issues: job.issues,
                     updated_date: job.updated_date,
@@ -1070,6 +1093,15 @@ export class Task extends Session {
                 },
                 size: {
                     get: () => data.size,
+                },
+                annotatedFrames: {
+                    get: () => data.annotated_frames ?? 0,
+                },
+                activeFrameCount: {
+                    get: () => data.active_frame_count ?? data.size ?? 0,
+                },
+                dataSourcePath: {
+                    get: () => data.data_source_path ?? null,
                 },
                 mode: {
                     get: () => data.mode,

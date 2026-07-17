@@ -9,16 +9,14 @@ import React, {
 } from 'react';
 import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
-import dayjs, { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 import { Col, Row } from 'antd/lib/grid';
 import Card from 'antd/lib/card';
 import Text from 'antd/lib/typography/Text';
-import Icon from '@ant-design/icons';
 import {
-    BorderOutlined,
     LoadingOutlined, MoreOutlined, QuestionCircleOutlined,
 } from '@ant-design/icons/lib/icons';
-import { DurationIcon, FramesIcon } from 'icons';
+import Progress from 'antd/lib/progress';
 import {
     Job, JobStage, JobState, JobType, Task, User, MediaType,
 } from 'cvat-core-wrapper';
@@ -31,7 +29,7 @@ import CVATTag, { TagType } from 'components/common/cvat-tag';
 import JobActionsComponent from 'components/jobs-page/actions-menu';
 import { JobStageSelector, JobStateSelector } from './job-selectors';
 
-function formatDate(value: Dayjs): string {
+function formatDate(value: dayjs.Dayjs): string {
     return value.format('MMM Do YYYY HH:mm');
 }
 
@@ -112,26 +110,33 @@ function JobItem(props: Readonly<Props>): JSX.Element {
     } = props;
 
     const deletes = useSelector((state: CombinedState) => state.jobs.activities.deletes);
+    const canEditAssignee = useSelector((state: CombinedState) => !!state.auth.user?.isStaff);
     const deleted = job.id in deletes ? deletes[job.id] === true : false;
     const { itemRef, handleContextMenuClick, handleContextMenuCapture } = useContextMenuClick<HTMLDivElement>();
 
     const { stage, state } = job;
     const created = dayjs(job.createdDate);
     const updated = dayjs(job.updatedDate);
-    const now = dayjs();
 
     const style = {};
     if (deleted) {
         (style as any).pointerEvents = 'none';
         (style as any).opacity = 0.5;
     }
-    const frameCountPercent = ((job.frameCount / (task.size || 1)) * 100).toFixed(0);
-    const frameCountPercentRepresentation = frameCountPercent === '0' ? '<1' : frameCountPercent;
+
     const isAudioTask = task.mediaType === MediaType.AUDIO;
+    const totalFrames = job.activeFrameCount ?? job.frameCount;
+    const annotatedFrames = Math.min(job.annotatedFrames ?? 0, totalFrames);
+    const annotationProgress = totalFrames > 0 ?
+        Math.round((annotatedFrames / totalFrames) * 100) : 0;
     const audioJobDuration = isAudioTask ? formatTimeShort(job.frameCount / 1000) : '';
     const audioJobRange = isAudioTask ?
         `${formatTimeShort(job.startFrame / 1000)} – ${formatTimeShort(job.stopFrame / 1000)}` : '';
     const jobName = `Job #${job.id}`;
+    const progressLabel = isAudioTask ?
+        audioJobDuration :
+        `${annotatedFrames} / ${totalFrames} frames`;
+    const rangeLabel = isAudioTask ? audioJobRange : `${job.startFrame}–${job.stopFrame}`;
 
     let tag = null;
     if (job.type === JobType.GROUND_TRUTH) {
@@ -164,11 +169,13 @@ function JobItem(props: Readonly<Props>): JSX.Element {
             onClick={onClick}
             onContextMenuCapture={handleContextMenuCapture}
         >
-            <Row align='middle'>
-                <Col span={6}>
-                    <Row>
+            <Row align='middle' gutter={[16, 8]}>
+                <Col xs={24} md={6}>
+                    <Row align='middle'>
                         <Col>
-                            <Link to={`/tasks/${job.taskId}/jobs/${job.id}`}>{jobName}</Link>
+                            <Link className='cvat-job-item-title' to={`/tasks/${job.taskId}/jobs/${job.id}`}>
+                                {jobName}
+                            </Link>
                         </Col>
                         {tag}
                         {job.type !== JobType.GROUND_TRUTH && (
@@ -179,106 +186,74 @@ function JobItem(props: Readonly<Props>): JSX.Element {
                             </Col>
                         )}
                     </Row>
-                    <Row className='cvat-job-item-dates-info'>
-                        <Col>
-                            <Text>Created: </Text>
-                            <Text type='secondary'>{`${formatDate(created)}`}</Text>
-                        </Col>
-                    </Row>
-                    <Row>
-                        <Col>
-                            <Text>Updated: </Text>
-                            <Text type='secondary'>{`${formatDate(updated)}`}</Text>
-                        </Col>
-                    </Row>
+                    <div className='cvat-job-item-meta'>
+                        <Text type='secondary'>
+                            {`Updated ${updated.fromNow()}`}
+                        </Text>
+                        <Text type='secondary' className='cvat-job-item-created'>
+                            {`Created ${formatDate(created)}`}
+                        </Text>
+                    </div>
                 </Col>
-                <Col span={12}>
-                    <Row className='cvat-job-item-selects' justify='space-between'>
-                        <Col>
-                            <Row>
-                                <Col className='cvat-job-item-select'>
-                                    <Row>
-                                        <Text>Assignee:</Text>
-                                    </Row>
-                                    <UserSelector
-                                        className='cvat-job-assignee-selector'
-                                        value={job.assignee}
-                                        onSelect={(user: User | null): void => {
-                                            if (job?.assignee?.id === user?.id) return;
-                                            onJobUpdate(job, { assignee: user });
-                                        }}
-                                    />
-                                </Col>
-                                <Col className='cvat-job-item-select'>
-                                    <Row justify='space-between' align='middle'>
-                                        <Col>
-                                            <Text>Stage:</Text>
-                                        </Col>
-                                    </Row>
-                                    <JobStageSelector
-                                        value={stage}
-                                        onSelect={(newValue: JobStage) => {
-                                            onJobUpdate(job, { stage: newValue });
-                                        }}
-                                    />
-                                </Col>
-                                <Col className='cvat-job-item-select'>
-                                    <Row justify='space-between' align='middle'>
-                                        <Col>
-                                            <Text>State:</Text>
-                                        </Col>
-                                    </Row>
-                                    <JobStateSelector
-                                        value={state}
-                                        onSelect={(newValue: JobState) => {
-                                            onJobUpdate(job, { state: newValue });
-                                        }}
-                                    />
-                                </Col>
-                            </Row>
-                        </Col>
-                    </Row>
-                </Col>
-                <Col span={5} offset={1}>
-                    <Row className='cvat-job-item-details'>
-                        <Col>
-                            <Row>
-                                <Col>
-                                    <Icon component={DurationIcon} />
-                                    <Text>Duration: </Text>
-                                    <Text type='secondary'>
-                                        {`${dayjs
-                                            .duration(now.diff(created))
-                                            .humanize()}`}
-                                    </Text>
-                                </Col>
-                            </Row>
-                            <Row>
-                                <Col>
-                                    <BorderOutlined />
-                                    <Text>{isAudioTask ? 'Duration: ' : 'Frame count: '}</Text>
-                                    <Text type='secondary' className='cvat-job-item-frames'>
-                                        {isAudioTask ?
-                                            `${audioJobDuration} (${frameCountPercentRepresentation}%)` :
-                                            `${job.frameCount} (${frameCountPercentRepresentation}%)`}
-                                    </Text>
-                                </Col>
-                            </Row>
-                            {job.type !== JobType.GROUND_TRUTH && (
-                                <Row>
-                                    <Col>
-                                        <Icon component={FramesIcon} />
-                                        <Text>{isAudioTask ? 'Time range: ' : 'Frame range: '}</Text>
-                                        <Text type='secondary' className='cvat-job-item-frame-range'>
-                                            {isAudioTask ?
-                                                audioJobRange :
-                                                `${job.startFrame}-${job.stopFrame}`}
-                                        </Text>
-                                    </Col>
-                                </Row>
+                <Col xs={24} md={10}>
+                    <Row className='cvat-job-item-selects' gutter={[8, 8]}>
+                        <Col className='cvat-job-item-select'>
+                            <Text type='secondary' className='cvat-job-item-select-label'>Assignee</Text>
+                            {canEditAssignee ? (
+                                <UserSelector
+                                    className='cvat-job-assignee-selector'
+                                    value={job.assignee}
+                                    onSelect={(user: User | null): void => {
+                                        if (job?.assignee?.id === user?.id) return;
+                                        onJobUpdate(job, { assignee: user });
+                                    }}
+                                />
+                            ) : (
+                                <Text>{job.assignee ? job.assignee.username : '—'}</Text>
                             )}
                         </Col>
+                        <Col className='cvat-job-item-select'>
+                            <Text type='secondary' className='cvat-job-item-select-label'>Stage</Text>
+                            <JobStageSelector
+                                value={stage}
+                                onSelect={(newValue: JobStage) => {
+                                    onJobUpdate(job, { stage: newValue });
+                                }}
+                            />
+                        </Col>
+                        <Col className='cvat-job-item-select'>
+                            <Text type='secondary' className='cvat-job-item-select-label'>State</Text>
+                            <JobStateSelector
+                                value={state}
+                                onSelect={(newValue: JobState) => {
+                                    onJobUpdate(job, { state: newValue });
+                                }}
+                            />
+                        </Col>
                     </Row>
+                </Col>
+                <Col xs={24} md={7}>
+                    <div className='cvat-job-item-progress'>
+                        <div className='cvat-job-item-progress-header'>
+                            <Text strong>{progressLabel}</Text>
+                            {!isAudioTask && (
+                                <Text type='secondary'>{`${annotationProgress}%`}</Text>
+                            )}
+                        </div>
+                        {!isAudioTask && (
+                            <Progress
+                                percent={annotationProgress}
+                                size='small'
+                                showInfo={false}
+                                strokeColor='#1890FF'
+                            />
+                        )}
+                        {job.type !== JobType.GROUND_TRUTH && (
+                            <Text type='secondary' className='cvat-job-item-frame-range'>
+                                {isAudioTask ? `Time ${rangeLabel}` : `Frames ${rangeLabel}`}
+                            </Text>
+                        )}
+                    </div>
                 </Col>
             </Row>
             <div

@@ -48,10 +48,12 @@ function JobActionsComponent(
         mergingConsensus,
         selectedIds,
         allJobs,
+        canEditAssignee,
     } = useSelector((state: CombinedState) => ({
         mergingConsensus: state.consensus.actions.merging,
         selectedIds: state.jobs.selected,
         allJobs: state.jobs.current,
+        canEditAssignee: !!state.auth.user?.isStaff,
     }), shallowEqual);
     const isBulkMode = selectedIds.length > 1;
 
@@ -221,6 +223,7 @@ function JobActionsComponent(
             projectId: jobInstance.projectId,
             pluginActions,
             isMergingConsensusEnabled: mergingConsensus[makeKey(jobInstance)],
+            canEditAssignee,
             onOpenBugTracker: jobInstance.bugTracker ? onOpenBugTracker : null,
             onImportAnnotations,
             onExportAnnotations,

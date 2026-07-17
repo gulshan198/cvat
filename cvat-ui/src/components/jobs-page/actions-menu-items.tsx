@@ -16,6 +16,7 @@ interface MenuItemsData {
     projectId: number | null;
     pluginActions: ReturnType<typeof usePlugins>;
     isMergingConsensusEnabled: boolean;
+    canEditAssignee: boolean;
     onOpenBugTracker: (() => void) | null;
     onImportAnnotations: () => void;
     onExportAnnotations: () => void;
@@ -49,11 +50,11 @@ export default function JobActionsItems(
 ): MenuProps['items'] {
     const {
         startEditField,
-        jobId,
         taskId,
         projectId,
         pluginActions,
         isMergingConsensusEnabled,
+        canEditAssignee,
         onOpenBugTracker,
         onImportAnnotations,
         onExportAnnotations,
@@ -153,12 +154,14 @@ export default function JobActionsItems(
         }, 70]);
     }
 
-    menuItems.push([{
-        key: MenuKeys.EDIT_ASSIGNEE,
-        onClick: () => startEditField('assignee'),
-        label: <CVATMenuEditLabel>{withCount('Assignee', MenuKeys.EDIT_ASSIGNEE)}</CVATMenuEditLabel>,
-        disabled: isDisabled(MenuKeys.EDIT_ASSIGNEE),
-    }, 80]);
+    if (canEditAssignee) {
+        menuItems.push([{
+            key: MenuKeys.EDIT_ASSIGNEE,
+            onClick: () => startEditField('assignee'),
+            label: <CVATMenuEditLabel>{withCount('Assignee', MenuKeys.EDIT_ASSIGNEE)}</CVATMenuEditLabel>,
+            disabled: isDisabled(MenuKeys.EDIT_ASSIGNEE),
+        }, 80]);
+    }
 
     menuItems.push([{
         key: MenuKeys.EDIT_STATE,
@@ -173,12 +176,6 @@ export default function JobActionsItems(
         label: <CVATMenuEditLabel>{withCount('Stage', MenuKeys.EDIT_STAGE)}</CVATMenuEditLabel>,
         disabled: isDisabled(MenuKeys.EDIT_STAGE),
     }, 100]);
-
-    menuItems.push([{
-        key: MenuKeys.VIEW_ANALYTICS,
-        label: withCount('View analytics', MenuKeys.VIEW_ANALYTICS, `/tasks/${taskId}/jobs/${jobId}/analytics`),
-        disabled: isDisabled(MenuKeys.VIEW_ANALYTICS),
-    }, 110]);
 
     if (onDeleteJob) {
         menuItems.push([{ type: 'divider' }, 119]);

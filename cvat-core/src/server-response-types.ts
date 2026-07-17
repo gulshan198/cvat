@@ -110,6 +110,7 @@ export interface SerializedTask {
     data_compressed_chunk_type: ChunkType
     data_original_chunk_type: ChunkType;
     data_cloud_storage_id: number | null;
+    data_source_path?: string | null;
     dimension?: DimensionType;
     media_type?: MediaType;
     id: number;
@@ -131,6 +132,8 @@ export interface SerializedTask {
     guide_id: number | null;
     segment_size: number;
     size: number;
+    annotated_frames?: number;
+    active_frame_count?: number;
     source_storage: SerializedStorage | null;
     target_storage: SerializedStorage | null;
     status: TaskStatus;
@@ -158,6 +161,8 @@ export interface SerializedJob {
     state: JobState;
     type: JobType;
     frame_count: number;
+    active_frame_count?: number;
+    annotated_frames?: number;
     start_frame: number;
     stop_frame: number;
     task_id: number;

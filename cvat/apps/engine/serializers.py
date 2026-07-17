@@ -13,7 +13,7 @@ import string
 import textwrap
 import uuid
 import warnings
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from collections.abc import Iterable, Sequence
 from contextlib import closing
 from copy import copy
@@ -202,6 +202,114 @@ class JobsSummarySerializer(_CollectionSummarySerializer):
 
     def __init__(self, *, model=models.Job, url_filter_key, **kwargs):
         super().__init__(model=model, url_filter_key=url_filter_key, **kwargs)
+
+
+def get_annotated_frames_by_job_ids(job_ids: Iterable[int]) -> dict[int, int]:
+    """Count distinct frames that have at least one shape, tag, or track keyframe per job."""
+    job_id_set = set(job_ids)
+    if not job_id_set:
+        return {}
+
+    frames_by_job: dict[int, set[int]] = defaultdict(set)
+
+    for job_id, frame in (
+        models.LabeledShape.objects.filter(job_id__in=job_id_set, parent__isnull=True)
+        .values_list("job_id", "frame")
+        .distinct()
+        .iterator(chunk_size=2000)
+    ):
+        frames_by_job[job_id].add(frame)
+
+    for job_id, frame in (
+        models.LabeledImage.objects.filter(job_id__in=job_id_set)
+        .values_list("job_id", "frame")
+        .distinct()
+        .iterator(chunk_size=2000)
+    ):
+        frames_by_job[job_id].add(frame)
+
+    for job_id, frame in (
+        models.TrackedShape.objects.filter(track__job_id__in=job_id_set)
+        .values_list("track__job_id", "frame")
+        .distinct()
+        .iterator(chunk_size=2000)
+    ):
+        frames_by_job[job_id].add(frame)
+
+    return {job_id: len(frames) for job_id, frames in frames_by_job.items()}
+
+
+def get_active_frame_count_for_job(job: models.Job) -> int:
+    """Count frames still available in a job after deletions."""
+    db_data = job.segment.task.data
+    if db_data is None:
+        return job.segment.frame_count
+
+    deleted_frames = set(db_data.deleted_frames or [])
+    if not deleted_frames:
+        return job.segment.frame_count
+
+    data_start_frame = db_data.start_frame
+    step = db_data.get_frame_step()
+    relative_frames = {
+        (abs_frame - data_start_frame) // step for abs_frame in job.segment.frame_set
+    }
+    return len(relative_frames - deleted_frames)
+
+
+def get_active_frame_counts_by_jobs(jobs: Iterable[models.Job]) -> dict[int, int]:
+    return {job.id: get_active_frame_count_for_job(job) for job in jobs}
+
+
+def get_common_data_source_path(db_data: models.Data | None) -> str | None:
+    """Build a human-readable cloud/storage folder path used by the task images."""
+    if db_data is None:
+        return None
+
+    sample_paths = list(
+        db_data.images.order_by("frame").values_list("path", flat=True)[:200]
+    )
+    folder = ""
+    if sample_paths:
+        normalized = [p.replace("\\", "/").rstrip("/") for p in sample_paths if p]
+        if normalized:
+            try:
+                common = os.path.commonpath(normalized)
+            except ValueError:
+                common = ""
+            if common and not any(p == common for p in normalized):
+                folder = common
+            else:
+                parent = os.path.dirname(common) if common else ""
+                folder = parent
+
+    folder = folder.replace("\\", "/").strip("/")
+
+    if db_data.cloud_storage_id:
+        cloud_storage = db_data.cloud_storage
+        if cloud_storage is None:
+            return folder or None
+
+        bucket = cloud_storage.resource
+        prefix = (cloud_storage.get_specific_attributes() or {}).get("prefix") or ""
+        prefix = prefix.strip("/")
+
+        # Image paths usually already include the storage prefix; avoid duplicating it.
+        if folder and prefix and (folder == prefix or folder.startswith(f"{prefix}/")):
+            path = folder
+        else:
+            path = "/".join(part for part in (prefix, folder) if part)
+
+        provider = cloud_storage.provider_type
+        if provider == models.CloudProviderChoice.GOOGLE_CLOUD_STORAGE:
+            return f"gs://{bucket}/{path}".rstrip("/") + ("/" if path else "")
+        if provider == models.CloudProviderChoice.AMAZON_S3:
+            return f"s3://{bucket}/{path}".rstrip("/") + ("/" if path else "")
+        if provider == models.CloudProviderChoice.AZURE_BLOB_STORAGE:
+            return f"azure://{bucket}/{path}".rstrip("/") + ("/" if path else "")
+        return f"{bucket}/{path}".rstrip("/") + ("/" if path else "")
+
+    return folder + "/" if folder else None
 
 
 MAX_FILENAME_LENGTH = 1024
@@ -1017,12 +1125,19 @@ class JobReadListSerializer(serializers.ListSerializer):
                 job.issue__count = issue_counts.get(job.id, 0)
                 job.child_jobs__count = children_counts.get(job.id, 0)
 
+            annotated_frames = get_annotated_frames_by_job_ids(job_ids)
+
             prefetch_related_objects(
                 page,
                 "segment__task__data",
                 "segment__task__annotation_guide",
                 "segment__task__project__annotation_guide",
             )
+
+            active_frame_counts = get_active_frame_counts_by_jobs(page)
+            for job in page:
+                job.annotated_frames = annotated_frames.get(job.id, 0)
+                job.active_frame_count = active_frame_counts.get(job.id, job.segment.frame_count)
 
         return super().to_representation(data)
 
@@ -1070,6 +1185,8 @@ class JobReadSerializer(serializers.ModelSerializer):
     parent_job_id = serializers.ReadOnlyField(allow_null=True)
     consensus_replicas = serializers.IntegerField(read_only=True)
     replicas_count = serializers.IntegerField(read_only=True)
+    annotated_frames = serializers.SerializerMethodField()
+    active_frame_count = serializers.SerializerMethodField()
 
     class Meta:
         model = models.Job
@@ -1090,6 +1207,8 @@ class JobReadSerializer(serializers.ModelSerializer):
             "stage",
             "state",
             "frame_count",
+            "active_frame_count",
+            "annotated_frames",
             "start_frame",
             "stop_frame",
             "data_chunk_size",
@@ -1110,6 +1229,20 @@ class JobReadSerializer(serializers.ModelSerializer):
         )
         read_only_fields = fields
         list_serializer_class = JobReadListSerializer
+
+    @extend_schema_field(serializers.IntegerField)
+    def get_annotated_frames(self, instance: models.Job) -> int:
+        annotated = getattr(instance, "annotated_frames", None)
+        if annotated is not None:
+            return annotated
+        return get_annotated_frames_by_job_ids([instance.id]).get(instance.id, 0)
+
+    @extend_schema_field(serializers.IntegerField)
+    def get_active_frame_count(self, instance: models.Job) -> int:
+        active = getattr(instance, "active_frame_count", None)
+        if active is not None:
+            return active
+        return get_active_frame_count_for_job(instance)
 
     def _can_see_task(self, instance: models.Job) -> bool:
         request = self.context.get("request")
@@ -2913,12 +3046,32 @@ class TaskReadListSerializer(serializers.ListSerializer):
             prefetch_related_objects(
                 page,
                 "data",
+                "data__cloud_storage",
                 Prefetch(
                     "data__validation_layout",
                     queryset=models.ValidationLayout.objects.only("id", "task_data_id", "mode"),
                 ),
                 "annotation_guide",
             )
+
+            jobs_by_task: dict[int, list[int]] = defaultdict(list)
+            for task_id, job_id in (
+                models.Job.objects.filter(segment__task_id__in=page_task_ids)
+                .values_list("segment__task_id", "id")
+            ):
+                jobs_by_task[task_id].append(job_id)
+
+            all_job_ids = [job_id for ids in jobs_by_task.values() for job_id in ids]
+            annotated_by_job = get_annotated_frames_by_job_ids(all_job_ids)
+            for task in page:
+                task.annotated_frames = sum(
+                    annotated_by_job.get(job_id, 0) for job_id in jobs_by_task.get(task.id, [])
+                )
+                if task.data is not None:
+                    deleted_count = len(task.data.deleted_frames or [])
+                    task.active_frame_count = max(0, (task.data.size or 0) - deleted_count)
+                else:
+                    task.active_frame_count = 0
 
         return super().to_representation(data)
 
@@ -2975,6 +3128,9 @@ class TaskReadSerializer(serializers.ModelSerializer):
     consensus_enabled = serializers.BooleanField(
         source="get_consensus_enabled", required=False, read_only=True
     )
+    annotated_frames = serializers.SerializerMethodField()
+    active_frame_count = serializers.SerializerMethodField()
+    data_source_path = serializers.SerializerMethodField()
 
     class Meta:
         model = models.Task
@@ -2996,8 +3152,11 @@ class TaskReadSerializer(serializers.ModelSerializer):
             "data_original_chunk_type",
             "data_compressed_chunk_type",
             "data_cloud_storage_id",
+            "data_source_path",
             "guide_id",
             "size",
+            "active_frame_count",
+            "annotated_frames",
             "image_quality",
             "data",
             "dimension",
@@ -3023,6 +3182,32 @@ class TaskReadSerializer(serializers.ModelSerializer):
 
     def get_consensus_enabled(self, instance: models.Task) -> bool:
         return instance.consensus_replicas > 0
+
+    @extend_schema_field(serializers.IntegerField)
+    def get_annotated_frames(self, instance: models.Task) -> int:
+        annotated = getattr(instance, "annotated_frames", None)
+        if annotated is not None:
+            return annotated
+        job_ids = list(
+            models.Job.objects.filter(segment__task_id=instance.id).values_list("id", flat=True)
+        )
+        return sum(get_annotated_frames_by_job_ids(job_ids).values())
+
+    @extend_schema_field(serializers.IntegerField)
+    def get_active_frame_count(self, instance: models.Task) -> int:
+        active = getattr(instance, "active_frame_count", None)
+        if active is not None:
+            return active
+        if instance.data is None:
+            return 0
+        deleted_count = len(instance.data.deleted_frames or [])
+        return max(0, (instance.data.size or 0) - deleted_count)
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_data_source_path(self, instance: models.Task) -> str | None:
+        if hasattr(instance, "data_source_path"):
+            return instance.data_source_path
+        return get_common_data_source_path(instance.data)
 
     def _can_see_project(self, instance: models.Task) -> bool:
         request = self.context.get("request")
@@ -3187,6 +3372,12 @@ class TaskWriteSerializer(WriteOnceMixin, serializers.ModelSerializer, OrgTransf
                     setattr(instance, field_name, field_value)
                 else:
                     instance.update_assignee(field_value)
+                    update_fields.append("assignee_updated_date")
+                    # Keep job assignees in sync with the task assignee.
+                    models.Job.objects.filter(segment__task_id=instance.pk).update(
+                        assignee_id=field_value,
+                        assignee_updated_date=instance.assignee_updated_date,
+                    )
                 update_fields.append(field_name)
 
     def update_labels(

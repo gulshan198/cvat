@@ -19,42 +19,58 @@
         box-shadow: $box-shadow-base;
     }
 
-    .cvat-job-item-icon {
-        .anticon svg {
-            fill: #fc3;
-        }
+    .ant-card-body {
+        padding: $grid-unit-size * 2 $grid-unit-size * 5 $grid-unit-size * 2 $grid-unit-size * 2;
+        min-height: $grid-unit-size * 9;
     }
 
-    .ant-card-body {
-        padding: $grid-unit-size * 2;
-        min-height: $grid-unit-size * 9;
+    .cvat-job-item-title {
+        font-weight: 600;
+    }
+
+    .cvat-job-item-meta {
+        display: flex;
+        flex-direction: column;
+        margin-top: $grid-unit-size * 0.5;
+        gap: 2px;
+
+        .cvat-job-item-created {
+            font-size: 12px;
+        }
     }
 
     .cvat-job-item-selects {
         .cvat-job-item-select {
-            width: $grid-unit-size * 16;
+            min-width: $grid-unit-size * 14;
+            flex: 1;
 
-            > :first-child {
-                margin-bottom: $grid-unit-size;
+            .cvat-job-item-select-label {
+                display: block;
+                margin-bottom: $grid-unit-size * 0.5;
+                font-size: 12px;
             }
 
             .ant-select {
                 width: 100%;
             }
         }
-
-        .cvat-job-item-select:not(:last-child) {
-            margin-right: $grid-unit-size;
-        }
     }
 
-    .cvat-job-item-details {
-        .ant-row {
-            margin-top: $grid-unit-size;
+    .cvat-job-item-progress {
+        .cvat-job-item-progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: $grid-unit-size;
+            margin-bottom: $grid-unit-size * 0.5;
         }
 
-        .anticon {
-            margin-right: $grid-unit-size;
+        .ant-progress {
+            margin-bottom: $grid-unit-size * 0.5;
+        }
+
+        .cvat-job-item-frame-range {
+            font-size: 12px;
         }
     }
 
@@ -62,21 +78,15 @@
         position: absolute;
         right: 0;
         top: 50%;
-        transform: translateY(-75%);
+        transform: translateY(-50%);
         font-size: 16px;
-        margin-top: $grid-unit-size;
         padding: 0 $grid-unit-size * 2;
-    }
-
-    .cvat-job-item-dates-info {
-        margin-top: $grid-unit-size;
     }
 
     .job-actions-menu {
         position: absolute;
         top: $grid-unit-size * 6.5;
     }
-
 }
 
 .ant-menu.cvat-job-item-menu {

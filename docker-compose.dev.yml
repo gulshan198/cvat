@@ -75,6 +75,15 @@ services:
   cvat_server:
     container_name: cvat_server
     image: cvat/server:${CVAT_VERSION:-dev}
+    pull_policy: build
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        http_proxy:
+        https_proxy:
+        socks_proxy:
+        CLAM_AV:
     restart: always
     depends_on:
       <<: *backend-deps
@@ -111,6 +120,7 @@ services:
   cvat_worker_utils:
     container_name: cvat_worker_utils
     image: cvat/server:${CVAT_VERSION:-dev}
+    pull_policy: never
     restart: always
     depends_on: *backend-deps
     environment:
@@ -128,6 +138,7 @@ services:
   cvat_worker_import:
     container_name: cvat_worker_import
     image: cvat/server:${CVAT_VERSION:-dev}
+    pull_policy: never
     restart: always
     depends_on: *backend-deps
     environment:
@@ -144,6 +155,7 @@ services:
   cvat_worker_export:
     container_name: cvat_worker_export
     image: cvat/server:${CVAT_VERSION:-dev}
+    pull_policy: never
     restart: always
     depends_on: *backend-deps
     environment:
@@ -160,6 +172,7 @@ services:
   cvat_worker_annotation:
     container_name: cvat_worker_annotation
     image: cvat/server:${CVAT_VERSION:-dev}
+    pull_policy: never
     restart: always
     depends_on: *backend-deps
     environment:
@@ -176,6 +189,7 @@ services:
   cvat_worker_chunks:
     container_name: cvat_worker_chunks
     image: cvat/server:${CVAT_VERSION:-dev}
+    pull_policy: never
     restart: always
     depends_on: *backend-deps
     environment:

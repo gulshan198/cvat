@@ -638,7 +638,8 @@ class CommonData(InstanceLabelData):
                 annotation_getter=fill_annotations,
             )
             if not include_empty:
-                assert not self._annotation_ir.is_stream
+                # Access annotations so streaming getters advance frame-by-frame in order,
+                # then skip frames that have no annotations.
                 if not (frame.labeled_shapes or frame.tags or frame.labels or frame.shapes):
                     continue
             yield frame
@@ -2028,7 +2029,9 @@ class CvatDataExtractor(dm.DatasetBase, CVATDataExtractorMixin):
         )
 
     def __iter__(self):
-        for frame_data in self._instance_data.group_by_frame(include_empty=True):
+        # Only export frames that have annotations (shapes/tags).
+        # Unannotated frames are skipped so formats like YOLO do not emit empty .txt files.
+        for frame_data in self._instance_data.group_by_frame(include_empty=False):
             yield self._process_one_frame_data(frame_data)
 
     def __len__(self):

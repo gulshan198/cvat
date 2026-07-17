@@ -38,6 +38,7 @@ interface StateToProps {
     shapeType: ShapeType;
     labels: any[];
     jobInstance: any;
+    activeLabelID: number | null;
 }
 
 function mapDispatchToProps(dispatch: any): DispatchToProps {
@@ -71,6 +72,7 @@ function mapStateToProps(state: CombinedState, own: OwnProps): StateToProps {
         annotation: {
             canvas: { instance: canvasInstance },
             job: { labels, instance: jobInstance },
+            drawing: { activeLabelID },
         },
         shortcuts: { normalizedKeyMap },
     } = state;
@@ -81,6 +83,7 @@ function mapStateToProps(state: CombinedState, own: OwnProps): StateToProps {
         labels,
         normalizedKeyMap,
         jobInstance,
+        activeLabelID,
     };
 }
 
@@ -113,7 +116,13 @@ class DrawShapePopoverContainer extends React.PureComponent<Props, State> {
             return ['any', shapeType].includes(label.type as string);
         });
 
-        const defaultLabelID = this.satisfiedLabels.length ? this.satisfiedLabels[0].id as number : null;
+        const defaultLabelID = (() => {
+            const { activeLabelID } = props;
+            if (activeLabelID && this.satisfiedLabels.some((label: Label) => label.id === activeLabelID)) {
+                return activeLabelID;
+            }
+            return this.satisfiedLabels.length ? this.satisfiedLabels[0].id as number : null;
+        })();
         const defaultRectDrawingMethod = RectDrawingMethod.CLASSIC;
         const defaultCuboidDrawingMethod = CuboidDrawingMethod.CLASSIC;
         this.state = {
@@ -129,6 +138,17 @@ class DrawShapePopoverContainer extends React.PureComponent<Props, State> {
             this.minimumPoints = 2;
         } else if (shapeType === ShapeType.POINTS) {
             this.minimumPoints = 1;
+        }
+    }
+
+    public componentDidUpdate(prevProps: Props): void {
+        const { activeLabelID } = this.props;
+        if (
+            activeLabelID !== prevProps.activeLabelID &&
+            activeLabelID &&
+            this.satisfiedLabels.some((label: Label) => label.id === activeLabelID)
+        ) {
+            this.setState({ selectedLabelID: activeLabelID });
         }
     }
 

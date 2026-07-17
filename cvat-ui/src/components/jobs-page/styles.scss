@@ -179,3 +179,61 @@
         font-size: 16px;
     }
 }
+
+.cvat-job-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: $grid-unit-size;
+}
+
+.cvat-job-card-label {
+    display: block;
+    font-size: 11px;
+    line-height: 1.2;
+    color: $text-color-secondary;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    margin-bottom: 2px;
+}
+
+.cvat-job-card-value {
+    font-size: 13px;
+    line-height: 1.3;
+    color: $text-color;
+    word-break: break-word;
+}
+
+.cvat-job-card-annotation-progress {
+    width: 100%;
+
+    .cvat-job-card-progress-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: $grid-unit-size;
+        margin-bottom: 2px;
+
+        .cvat-job-card-label {
+            margin-bottom: 0;
+        }
+    }
+
+    .cvat-job-card-progress-percent {
+        font-size: 12px;
+        font-weight: 600;
+        color: $text-color;
+    }
+
+    .ant-progress {
+        margin-bottom: 0;
+        margin-top: 2px;
+    }
+
+    .cvat-job-card-progress-summary {
+        display: block;
+        margin-top: $grid-unit-size * 0.5;
+        font-size: 12px;
+        line-height: 1.35;
+        color: $text-color-secondary;
+    }
+}

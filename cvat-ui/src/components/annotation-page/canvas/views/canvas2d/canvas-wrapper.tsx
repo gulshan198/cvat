@@ -50,6 +50,7 @@ import {
     collapseObjectItems,
     collapseSidebar,
     AnnotationSource,
+    repeatDrawShapeAsync,
 } from 'actions/annotation-actions';
 import {
     switchGrid,
@@ -133,6 +134,7 @@ interface DispatchToProps {
     onSetupCanvas(): void;
     onResetCanvas: () => void;
     updateActiveControl: (activeControl: ActiveControl) => void;
+    onRepeatDrawShape(): void;
     onUpdateAnnotations(states: ObjectState[]): void;
     onCreateAnnotations(states: ObjectState[], source?: AnnotationSource): void;
     onMergeAnnotations(states: ObjectState[]): void;
@@ -316,6 +318,9 @@ function mapDispatchToProps(dispatch: any): DispatchToProps {
         },
         updateActiveControl(activeControl: ActiveControl): void {
             dispatch(updateActiveControlAction(activeControl));
+        },
+        onRepeatDrawShape(): void {
+            dispatch(repeatDrawShapeAsync());
         },
         onUpdateAnnotations(states: ObjectState[]): void {
             dispatch(updateAnnotationsAsync(states));
@@ -697,15 +702,20 @@ class CanvasWrapperComponent extends React.PureComponent<Props> {
     private onCanvasShapeDrawn = (event: any): void => {
         const {
             jobInstance, activeLabelID, activeObjectType, frame, updateActiveControl, onCreateAnnotations,
-            onUpdateEditedObject, activeObjectHidden, workspace, curZLayer,
+            onUpdateEditedObject, activeObjectHidden, workspace, curZLayer, onRepeatDrawShape,
         } = this.props;
-
-        if (!event.detail.continue) {
-            updateActiveControl(ActiveControl.CURSOR);
-        }
 
         const { state, duration, simplifyPoly } = event.detail;
         const isDrawnFromScratch = !state.label;
+        // Keep the same label + shape drawing mode active after each successful draw
+        const stickyContinue = isDrawnFromScratch &&
+            !event.detail.continue &&
+            !simplifyPoly &&
+            workspace !== Workspace.SINGLE_SHAPE;
+
+        if (!event.detail.continue && !stickyContinue) {
+            updateActiveControl(ActiveControl.CURSOR);
+        }
 
         state.objectType = state.shapeType === ShapeType.MASK ?
             ObjectType.SHAPE : state.objectType ?? activeObjectType;
@@ -740,6 +750,11 @@ class CanvasWrapperComponent extends React.PureComponent<Props> {
 
         onCreateAnnotations([objectState], source);
         onUpdateEditedObject(null);
+
+        if (stickyContinue) {
+            // Re-enter draw with the remembered label/shape so the user can keep annotating
+            setTimeout(() => onRepeatDrawShape(), 0);
+        }
     };
 
     private onCanvasObjectsMerged = (event: any): void => {

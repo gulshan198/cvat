@@ -17,12 +17,16 @@ import withVisibilityHandling from './handle-popover-visibility';
 export interface Props {
     canvasInstance: Canvas;
     isDrawing: boolean;
+    isArmed?: boolean;
     disabled?: boolean;
 }
 
 const CustomPopover = withVisibilityHandling(Popover, 'draw-polygon');
 function DrawPolygonControl(props: Props): JSX.Element {
-    const { canvasInstance, isDrawing, disabled } = props;
+    const {
+        canvasInstance, isDrawing, isArmed, disabled,
+    } = props;
+    const isActive = isDrawing || !!isArmed;
     const dynamicPopoverProps = isDrawing ? {
         overlayStyle: {
             display: 'none',
@@ -35,7 +39,9 @@ function DrawPolygonControl(props: Props): JSX.Element {
             canvasInstance.draw({ enabled: false });
         },
     } : {
-        className: 'cvat-draw-polygon-control',
+        className: isActive ?
+            'cvat-draw-polygon-control cvat-active-canvas-control' :
+            'cvat-draw-polygon-control',
     };
 
     return disabled ? (

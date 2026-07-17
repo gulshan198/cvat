@@ -12,7 +12,7 @@ import {
 
 interface Props {
     taskMeta: FramesMetaData,
-    cloudStorageInstance: CloudStorage,
+    cloudStorageInstance: CloudStorage | null,
     onUpdateTaskMeta: (meta: FramesMetaData) => Promise<void>;
 }
 
@@ -40,20 +40,34 @@ export default function CloudStorageEditorComponent(props: Props): JSX.Element |
         return null;
     }
 
+    const storagePrefix = cloudStorageInstance?.prefix;
+    const bucketName = cloudStorageInstance?.resource;
+
     return (
-        <SelectCloudStorage
-            searchPhrase={searchPhrase}
-            cloudStorage={cloudStorageInstance}
-            setSearchPhrase={setSearchPhrase}
-            onSelectCloudStorage={(_cloudStorage: CloudStorage | null) => {
-                if (_cloudStorage) {
-                    taskMeta.cloudStorageId = _cloudStorage.id;
-                    onUpdateTaskMeta(taskMeta);
-                } else {
-                    setSearchPhrase(cloudStorageInstance ? cloudStorageInstance.displayName : '');
-                }
-            }}
-            label={label}
-        />
+        <div className='cvat-task-cloud-storage-editor'>
+            <SelectCloudStorage
+                searchPhrase={searchPhrase}
+                cloudStorage={cloudStorageInstance}
+                setSearchPhrase={setSearchPhrase}
+                onSelectCloudStorage={(_cloudStorage: CloudStorage | null) => {
+                    if (_cloudStorage) {
+                        taskMeta.cloudStorageId = _cloudStorage.id;
+                        onUpdateTaskMeta(taskMeta);
+                    } else {
+                        setSearchPhrase(cloudStorageInstance ? cloudStorageInstance.displayName : '');
+                    }
+                }}
+                label={label}
+            />
+            {cloudStorageInstance && (bucketName || storagePrefix) && (
+                <div className='cvat-task-cloud-storage-path'>
+                    <Text type='secondary'>
+                        {bucketName ? `Bucket: ${bucketName}` : null}
+                        {bucketName && storagePrefix ? ' · ' : null}
+                        {storagePrefix ? `Prefix: ${storagePrefix}` : null}
+                    </Text>
+                </div>
+            )}
+        </div>
     );
 }

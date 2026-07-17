@@ -189,7 +189,8 @@ const componentShortcuts = {
     DELETE_OBJECT_SINGLE_SHAPE: {
         name: 'Delete object',
         description: 'Delete an active object. Use shift to force delete of locked objects',
-        sequences: ['del', 'shift+del'],
+        sequences: [],
+        displayedSequences: ['backspace', 'del', 'shift+backspace', 'shift+del'],
         scope: ShortcutScope.SINGLE_SHAPE_ANNOTATION_WORKSPACE,
     },
     HIDE_MASK_SINGLE_SHAPE: {
@@ -389,6 +390,29 @@ function SingleShapeSidebar(): JSX.Element {
         state.label, state.labelType,
         state.pointsCount, state.pointsCountIsPredefined,
     ]);
+
+    useEffect(() => {
+        const onDeleteKeyDown = (event: KeyboardEvent): void => {
+            if (event.key !== 'Backspace' && event.key !== 'Delete') {
+                return;
+            }
+            const target = event.target as HTMLElement | null;
+            const tag = target?.tagName;
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target?.isContentEditable) {
+                return;
+            }
+            const objectStateToRemove = annotations.find((_state) => _state.clientID === activatedStateID);
+            if (!objectStateToRemove) {
+                return;
+            }
+            event.preventDefault();
+            event.stopPropagation();
+            appDispatch(removeObjectAsync(objectStateToRemove, event.shiftKey));
+        };
+
+        window.addEventListener('keydown', onDeleteKeyDown, true);
+        return () => window.removeEventListener('keydown', onDeleteKeyDown, true);
+    }, [annotations, activatedStateID, appDispatch]);
 
     const siderProps: SiderProps = {
         className: 'cvat-single-shape-annotation-sidebar',

@@ -15,6 +15,7 @@ interface MenuItemsData {
     isAutomaticAnnotationEnabled: boolean;
     isConsensusEnabled: boolean;
     isMergingConsensusEnabled: boolean;
+    canEditAssignee: boolean;
     pluginActions: ReturnType<typeof usePlugins>;
     onMergeConsensusJobs: (() => void) | null;
     onOpenBugTracker: (() => void) | null;
@@ -40,6 +41,7 @@ export default function TaskActionsItems(menuItemsData: MenuItemsData, taskMenuP
         isAutomaticAnnotationEnabled,
         isConsensusEnabled,
         isMergingConsensusEnabled,
+        canEditAssignee,
         onMergeConsensusJobs,
         onUploadAnnotations,
         onExportDataset,
@@ -92,24 +94,14 @@ export default function TaskActionsItems(menuItemsData: MenuItemsData, taskMenuP
         disabled: isDisabled('backup_task'),
     }, 40]);
 
-    menuItems.push([{
-        key: 'edit_assignee',
-        onClick: () => startEditField('assignee'),
-        label: <CVATMenuEditLabel>{withCount('Assignee', 'edit_assignee')}</CVATMenuEditLabel>,
-        disabled: isDisabled('edit_assignee'),
-    }, 50]);
-
-    menuItems.push([{
-        key: 'view-analytics',
-        label: withCount('View analytics', 'view-analytics', `/tasks/${taskId}/analytics`),
-        disabled: isDisabled('view-analytics'),
-    }, 60]);
-
-    menuItems.push([{
-        key: 'quality_control',
-        label: withCount('Quality control', 'quality_control', `/tasks/${taskId}/quality-control`),
-        disabled: isDisabled('quality_control'),
-    }, 70]);
+    if (canEditAssignee) {
+        menuItems.push([{
+            key: 'edit_assignee',
+            onClick: () => startEditField('assignee'),
+            label: <CVATMenuEditLabel>{withCount('Assignee', 'edit_assignee')}</CVATMenuEditLabel>,
+            disabled: isDisabled('edit_assignee'),
+        }, 50]);
+    }
 
     if (isConsensusEnabled) {
         menuItems.push([{

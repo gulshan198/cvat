@@ -147,6 +147,33 @@
             margin-left: $grid-unit-size;
         }
     }
+
+    .cvat-task-item-frames-progress {
+        margin-top: $grid-unit-size;
+
+        .cvat-task-item-frames-progress-header {
+            display: flex;
+            justify-content: space-between;
+            gap: $grid-unit-size;
+            margin-bottom: 2px;
+        }
+
+        > span,
+        .cvat-task-item-frames-progress-header span {
+            font-size: 12px;
+        }
+
+        .ant-progress {
+            margin-bottom: 0;
+        }
+    }
+
+    .cvat-task-item-jobs-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: $grid-unit-size;
+        margin-bottom: $grid-unit-size * 0.5;
+    }
 }
 
 .close-auto-annotation-icon {

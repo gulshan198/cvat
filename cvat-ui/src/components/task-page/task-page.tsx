@@ -110,8 +110,15 @@ function TaskPageComponent(): JSX.Element {
 
     const onUpdateTask = (task: Task, fields: Parameters<Task['save']>[0] = {}): Promise<Task> => {
         const promise = dispatch(updateTaskAsync(task, fields));
-        promise.then((updatedTask: Task) => {
-            setTaskInstance(updatedTask);
+        promise.then(async () => {
+            // Re-fetch so job assignees stay in sync after task assignee changes.
+            const [freshTask]: Task[] = await core.tasks.get({ id: task.id });
+            if (freshTask) {
+                setTaskInstance(freshTask);
+                dispatch(jobsActions.getJobsSuccess(
+                    Object.assign([...freshTask.jobs], { count: freshTask.jobs.length }),
+                ));
+            }
         });
         return promise;
     };

@@ -1104,8 +1104,8 @@ export function getJobAsync({
     };
 }
 
-export function saveAnnotationsAsync(): ThunkAction {
-    return async (dispatch: ThunkDispatch): Promise<void> => {
+export function saveAnnotationsAsync(options?: { advanceToNextFrame?: boolean }): ThunkAction {
+    return async (dispatch: ThunkDispatch, getState: () => CombinedState): Promise<void> => {
         const { jobInstance } = receiveAnnotationsParameters();
 
         dispatch({
@@ -1125,12 +1125,48 @@ export function saveAnnotationsAsync(): ThunkAction {
                 await dispatch(updateJobAsync(jobInstance, { state: JobState.IN_PROGRESS }));
             }
 
+            if (jobInstance instanceof cvat.classes.Job) {
+                try {
+                    const refreshedJobs = await cvat.jobs.get({ jobID: jobInstance.id });
+                    const refreshedJob = refreshedJobs[0] as Job | undefined;
+                    if (refreshedJob) {
+                        const activeFrames = refreshedJob.activeFrameCount ?? refreshedJob.frameCount ?? 0;
+                        const annotatedFrames = refreshedJob.annotatedFrames ?? 0;
+                        if (
+                            activeFrames > 0 &&
+                            annotatedFrames >= activeFrames &&
+                            refreshedJob.state !== JobState.COMPLETED
+                        ) {
+                            await dispatch(updateJobAsync(jobInstance, { state: JobState.COMPLETED }));
+                        }
+                    }
+                } catch (_) {
+                    // Progress auto-complete is best-effort; do not fail the save.
+                }
+            }
+
             dispatch({
                 type: AnnotationActionTypes.SAVE_ANNOTATIONS_SUCCESS,
                 payload: {},
             });
 
             dispatch(fetchAnnotationsAsync());
+
+            if (options?.advanceToNextFrame) {
+                const state = getState();
+                const frame = state.annotation.player.frame.number;
+                const showDeletedFrames = state.settings.player.showDeletedFrames;
+                const frameFrom = Math.min(jobInstance.stopFrame, frame + 1);
+                const newFrame = await jobInstance.frames.search(
+                    { notDeleted: !showDeletedFrames },
+                    frameFrom,
+                    jobInstance.stopFrame,
+                );
+
+                if (newFrame !== null && newFrame !== frame && isAbleToChangeFrame(newFrame)) {
+                    await dispatch(changeFrameAsync(newFrame));
+                }
+            }
         } catch (error) {
             dispatch({
                 type: AnnotationActionTypes.SAVE_ANNOTATIONS_FAILED,

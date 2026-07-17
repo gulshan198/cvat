@@ -7,7 +7,7 @@ import React, { useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { useHistory } from 'react-router';
 import Card from 'antd/lib/card';
-import Descriptions from 'antd/lib/descriptions';
+import Progress from 'antd/lib/progress';
 import { MoreOutlined } from '@ant-design/icons';
 
 import { Job, JobType } from 'cvat-core-wrapper';
@@ -70,6 +70,15 @@ function JobCardComponent(props: Readonly<Props>): JSX.Element {
     }
 
     const cardClassName = `cvat-job-page-list-item${selected ? ' cvat-item-selected' : ''}`;
+    const assignedFrames = job.frameCount ?? (job.stopFrame - job.startFrame + 1);
+    const activeFrames = job.activeFrameCount ?? assignedFrames;
+    const deletedFrames = Math.max(0, assignedFrames - activeFrames);
+    const annotatedFrames = Math.min(job.annotatedFrames ?? 0, activeFrames);
+    const annotationProgress = activeFrames > 0 ?
+        Math.round((annotatedFrames / activeFrames) * 100) : 0;
+    const progressSummary = deletedFrames > 0 ?
+        `${annotatedFrames} / ${activeFrames} annotated · ${deletedFrames} deleted (of ${assignedFrames})` :
+        `${annotatedFrames} / ${activeFrames} frames annotated`;
 
     /* eslint-disable jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */
     const card = (
@@ -99,15 +108,32 @@ function JobCardComponent(props: Readonly<Props>): JSX.Element {
             onClick={onClick}
             onContextMenuCapture={handleContextMenuCapture}
         >
-            <Descriptions column={1} size='small'>
-                <Descriptions.Item label='Stage and state'>{`${job.stage} ${job.state}`}</Descriptions.Item>
-                <Descriptions.Item label='Frames'>{job.stopFrame - job.startFrame + 1}</Descriptions.Item>
-                {job.assignee ? (
-                    <Descriptions.Item label='Assignee'>{job.assignee.username}</Descriptions.Item>
-                ) : (
-                    <Descriptions.Item label='Assignee'> </Descriptions.Item>
-                )}
-            </Descriptions>
+            <div className='cvat-job-card-body'>
+                <div className='cvat-job-card-stage-state'>
+                    <span className='cvat-job-card-label'>Stage &amp; state</span>
+                    <span className='cvat-job-card-value'>{`${job.stage} · ${job.state}`}</span>
+                </div>
+                <div className='cvat-job-card-annotation-progress'>
+                    <div className='cvat-job-card-progress-header'>
+                        <span className='cvat-job-card-label'>Progress</span>
+                        <span className='cvat-job-card-progress-percent'>{`${annotationProgress}%`}</span>
+                    </div>
+                    <Progress
+                        percent={annotationProgress}
+                        size='small'
+                        showInfo={false}
+                        strokeColor='#1890FF'
+                        trailColor='rgba(0, 0, 0, 0.06)'
+                    />
+                    <span className='cvat-job-card-progress-summary'>{progressSummary}</span>
+                </div>
+                <div className='cvat-job-card-assignee'>
+                    <span className='cvat-job-card-label'>Assignee</span>
+                    <span className='cvat-job-card-value'>
+                        {job.assignee ? job.assignee.username : '—'}
+                    </span>
+                </div>
+            </div>
             <div
                 onClick={handleContextMenuClick}
                 className='cvat-job-card-more-button cvat-actions-menu-button'

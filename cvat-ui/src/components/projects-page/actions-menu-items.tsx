@@ -18,6 +18,7 @@ interface MenuItemsData {
     onBackupProject: () => void;
     onDeleteProject: () => void;
     selectedIds: number[];
+    canEditAssignee: boolean;
 }
 
 export default function ProjectActionsItems(
@@ -33,6 +34,7 @@ export default function ProjectActionsItems(
         onBackupProject,
         onDeleteProject,
         selectedIds = [],
+        canEditAssignee,
     } = menuItemsData;
 
     const isBulkMode = selectedIds.length > 1;
@@ -63,24 +65,14 @@ export default function ProjectActionsItems(
         disabled: isDisabled('backup-project'),
     }, 20]);
 
-    menuItems.push([{
-        key: 'edit_assignee',
-        onClick: () => startEditField('assignee'),
-        label: <CVATMenuEditLabel>{withCount('Assignee', 'edit_assignee')}</CVATMenuEditLabel>,
-        disabled: isDisabled('edit_assignee'),
-    }, 30]);
-
-    menuItems.push([{
-        key: 'view-analytics',
-        label: <Link to={`/projects/${projectId}/analytics`}>View analytics</Link>,
-        disabled: isDisabled('view-analytics'),
-    }, 40]);
-
-    menuItems.push([{
-        key: 'quality-control',
-        label: <Link to={`/projects/${projectId}/quality-control`}>Quality control</Link>,
-        disabled: isDisabled('quality-control'),
-    }, 50]);
+    if (canEditAssignee) {
+        menuItems.push([{
+            key: 'edit_assignee',
+            onClick: () => startEditField('assignee'),
+            label: <CVATMenuEditLabel>{withCount('Assignee', 'edit_assignee')}</CVATMenuEditLabel>,
+            disabled: isDisabled('edit_assignee'),
+        }, 30]);
+    }
 
     menuItems.push([{
         key: 'set-webhooks',

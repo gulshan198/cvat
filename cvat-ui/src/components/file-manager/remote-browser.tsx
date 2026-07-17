@@ -522,6 +522,19 @@ function RemoteBrowser(props: Props): JSX.Element {
                     }}
                     dataSource={dataSource.children}
                 />
+                {(() => {
+                    const selectedImageCount = selectedRowKeys.filter(
+                        (key) => !key.toLocaleString().endsWith('/'),
+                    ).length;
+                    if (selectedImageCount === 0) {
+                        return null;
+                    }
+                    return (
+                        <Text className='cvat-text-color cvat-remote-browser-selected-count'>
+                            {`${selectedImageCount} image${selectedImageCount === 1 ? '' : 's'} selected`}
+                        </Text>
+                    );
+                })()}
                 <Pagination
                     className='cvat-remote-browser-pages'
                     pageSize={PAGE_SIZE}

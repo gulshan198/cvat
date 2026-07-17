@@ -19,12 +19,16 @@ import withVisibilityHandling from './handle-popover-visibility';
 export interface Props {
     canvasInstance: Canvas | Canvas3d;
     isDrawing: boolean;
+    isArmed?: boolean;
     disabled?: boolean;
 }
 
 const CustomPopover = withVisibilityHandling(Popover, 'draw-cuboid');
 function DrawCuboidControl(props: Props): JSX.Element {
-    const { canvasInstance, isDrawing, disabled } = props;
+    const {
+        canvasInstance, isDrawing, isArmed, disabled,
+    } = props;
+    const isActive = isDrawing || !!isArmed;
     const dynamicPopoverProps = isDrawing ? {
         overlayStyle: {
             display: 'none',
@@ -37,7 +41,9 @@ function DrawCuboidControl(props: Props): JSX.Element {
             canvasInstance.draw({ enabled: false });
         },
     } : {
-        className: 'cvat-draw-cuboid-control',
+        className: isActive ?
+            'cvat-draw-cuboid-control cvat-active-canvas-control' :
+            'cvat-draw-cuboid-control',
     };
 
     return disabled ? (

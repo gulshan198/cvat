@@ -78,6 +78,12 @@
         }
     }
 
+    .cvat-remote-browser-selected-count {
+        display: block;
+        margin-top: $grid-unit-size;
+        font-weight: 500;
+    }
+
     button {
         padding: 0;
     }
