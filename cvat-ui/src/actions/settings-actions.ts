@@ -492,7 +492,14 @@ export function restoreSettingsAsync(): ThunkAction {
 
             Object.entries(loadedSettings.shortcuts.keyMap).forEach(([key, value]) => {
                 if (key in updateKeyMap) {
-                    updateKeyMap[key].sequences = (value as { sequences: string[] }).sequences;
+                    const cachedSequences = (value as { sequences: string[] }).sequences ?? [];
+                    const defaultSequences = updateKeyMap[key].sequences ?? [];
+                    // Keep user customizations, but always union with current defaults so
+                    // newly added sequences (e.g. command+ on Mac) are not lost forever.
+                    updateKeyMap[key].sequences = Array.from(new Set([
+                        ...cachedSequences,
+                        ...defaultSequences,
+                    ]));
                 }
             });
 

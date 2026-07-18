@@ -17,7 +17,6 @@ import Input from 'antd/lib/input';
 import notification from 'antd/lib/notification';
 import { createProjectAsync } from 'actions/projects-actions';
 import { Storage, StorageData, StorageLocation } from 'cvat-core-wrapper';
-import patterns from 'utils/validation-patterns';
 import LabelsEditor from 'components/labels-editor/labels-editor';
 import SourceStorageField from 'components/storage/source-storage-field';
 import TargetStorageField from 'components/storage/target-storage-field';
@@ -83,25 +82,6 @@ function AdvancedConfigurationForm(props: AdvancedConfigurationProps): JSX.Eleme
     } = props;
     return (
         <Form layout='vertical' ref={formRef} initialValues={initialValues}>
-            <Form.Item
-                name='bug_tracker'
-                label='Issue tracker'
-                extra='Attach issue tracker where the project is described'
-                hasFeedback
-                rules={[
-                    {
-                        validator: (_, value, callback): void => {
-                            if (value && !patterns.validateURL.pattern.test(value)) {
-                                callback('Issue tracker must be URL');
-                            } else {
-                                callback();
-                            }
-                        },
-                    },
-                ]}
-            >
-                <Input />
-            </Form.Item>
             <Row justify='space-between'>
                 <Col span={11}>
                     <SourceStorageField

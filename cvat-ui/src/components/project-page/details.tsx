@@ -11,7 +11,6 @@ import Text from 'antd/lib/typography/Text';
 
 import { getCore, Project } from 'cvat-core-wrapper';
 import LabelsEditor from 'components/labels-editor/labels-editor';
-import BugTrackerEditor from 'components/task-page/bug-tracker-editor';
 import UserSelector from 'components/task-page/user-selector';
 import MdGuideControl from 'components/md-guide/md-guide-control';
 
@@ -53,13 +52,6 @@ export default function DetailsComponent(props: DetailsComponentProps): JSX.Elem
                         {` on ${dayjs(project.createdDate).format('MMMM Do YYYY')}`}
                     </Text>
                     <MdGuideControl instanceType='project' id={project.id} />
-                    <BugTrackerEditor
-                        instance={project}
-                        onChange={(bugTracker): void => {
-                            project.bugTracker = bugTracker;
-                            onUpdateProject(project);
-                        }}
-                    />
                 </Col>
                 <Col>
                     <Text type='secondary'>Assigned to</Text>

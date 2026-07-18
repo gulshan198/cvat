@@ -74,13 +74,11 @@ export const CV_ADVANCED_CONFIGURATION_SECTIONS = [
     AdvancedConfigurationSection.FRAME_RANGE,
     AdvancedConfigurationSection.CHUNK_SIZE,
     AdvancedConfigurationSection.CONSENSUS,
-    AdvancedConfigurationSection.BUG_TRACKER,
     AdvancedConfigurationSection.STORAGE,
 ];
 
 export const AUDIO_ADVANCED_CONFIGURATION_SECTIONS = [
     AdvancedConfigurationSection.CONSENSUS,
-    AdvancedConfigurationSection.BUG_TRACKER,
     AdvancedConfigurationSection.STORAGE,
 ];
 

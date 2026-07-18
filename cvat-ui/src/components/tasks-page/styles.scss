@@ -148,6 +148,13 @@
         }
     }
 
+    .cvat-task-item-jobs-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: $grid-unit-size;
+        margin-bottom: $grid-unit-size * 0.5;
+    }
+
     .cvat-task-item-frames-progress {
         margin-top: $grid-unit-size;
 
@@ -166,13 +173,6 @@
         .ant-progress {
             margin-bottom: 0;
         }
-    }
-
-    .cvat-task-item-jobs-summary {
-        display: flex;
-        flex-wrap: wrap;
-        gap: $grid-unit-size;
-        margin-bottom: $grid-unit-size * 0.5;
     }
 }
 

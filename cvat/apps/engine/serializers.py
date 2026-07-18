@@ -210,6 +210,13 @@ def get_annotated_frames_by_job_ids(job_ids: Iterable[int]) -> dict[int, int]:
     if not job_id_set:
         return {}
 
+    deleted_frames_by_job: dict[int, set[int]] = {
+        job_id: set(deleted_frames or [])
+        for job_id, deleted_frames in models.Job.objects.filter(id__in=job_id_set).values_list(
+            "id", "segment__task__data__deleted_frames"
+        )
+    }
+
     frames_by_job: dict[int, set[int]] = defaultdict(set)
 
     for job_id, frame in (
@@ -236,7 +243,11 @@ def get_annotated_frames_by_job_ids(job_ids: Iterable[int]) -> dict[int, int]:
     ):
         frames_by_job[job_id].add(frame)
 
-    return {job_id: len(frames) for job_id, frames in frames_by_job.items()}
+    # Deleted frames must not count towards annotation progress
+    return {
+        job_id: len(frames - deleted_frames_by_job.get(job_id, set()))
+        for job_id, frames in frames_by_job.items()
+    }
 
 
 def get_active_frame_count_for_job(job: models.Job) -> int:
@@ -3958,7 +3969,9 @@ class DataMetaWriteSerializer(serializers.ModelSerializer):
 
         return requested_deleted_frames
 
+    @transaction.atomic
     def update(self, instance: models.Data, validated_data):
+        previously_deleted_frames = set(instance.deleted_frames or [])
         instance = super().update(instance, validated_data)
         db_task = models.Task.objects.filter(data=instance).first()
         if validated_data.get("cloud_storage_id"):
@@ -3966,6 +3979,13 @@ class DataMetaWriteSerializer(serializers.ModelSerializer):
             for quality in models.FrameQuality:
                 task_frame_provider.invalidate_chunks(quality=quality)
         if db_task:
+            # Annotations on newly deleted frames are removed so that
+            # annotation progress stays consistent with the remaining frames.
+            newly_deleted_frames = sorted(
+                set(instance.deleted_frames or []) - previously_deleted_frames
+            )
+            if newly_deleted_frames:
+                models.clear_annotations_on_frames_in_task(db_task, newly_deleted_frames)
             db_task.touch()
         return instance
 
@@ -4040,8 +4060,17 @@ class JobDataMetaWriteSerializer(serializers.ModelSerializer):
             db_data.validation_layout.save(update_fields=["disabled_frames"])
 
         if updated_deleted_task_frames is not None:
+            previously_deleted_frames = set(db_data.deleted_frames or [])
             db_data.deleted_frames = updated_deleted_task_frames
             db_data.save(update_fields=["deleted_frames"])
+
+            # Annotations on newly deleted frames are removed so that
+            # annotation progress stays consistent with the remaining frames.
+            newly_deleted_frames = sorted(
+                set(updated_deleted_task_frames) - previously_deleted_frames
+            )
+            if newly_deleted_frames:
+                models.clear_annotations_on_frames_in_task(db_task, newly_deleted_frames)
 
         db_task.touch()
         if db_task.project:

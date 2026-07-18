@@ -138,9 +138,6 @@ function TaskItemComponent(props: TaskItemProps): JSX.Element {
         }
 
         const numOfJobs = taskInstance.progress.totalJobs;
-        const numOfCompleted = taskInstance.progress.completedJobs;
-        const numOfValidation = taskInstance.progress.validationJobs;
-        const numOfAnnotation = taskInstance.progress.annotationJobs;
         const totalFrames = taskInstance.activeFrameCount ?? taskInstance.size ?? 0;
         const annotatedFrames = Math.min(taskInstance.annotatedFrames ?? 0, totalFrames);
         const framesProgress = totalFrames > 0 ?
@@ -151,23 +148,11 @@ function TaskItemComponent(props: TaskItemProps): JSX.Element {
                 <Row>
                     <Col span={24} className='cvat-task-item-progress-wrapper'>
                         <div className='cvat-task-item-jobs-summary'>
-                            {numOfCompleted > 0 && (
-                                <Text strong className='cvat-task-completed-progress'>
-                                    {`${numOfCompleted} done`}
-                                </Text>
-                            )}
-                            {numOfValidation > 0 && (
-                                <Text strong className='cvat-task-validation-progress'>
-                                    {`${numOfValidation} review`}
-                                </Text>
-                            )}
-                            {numOfAnnotation > 0 && (
-                                <Text strong className='cvat-task-annotation-progress'>
-                                    {`${numOfAnnotation} in progress`}
-                                </Text>
-                            )}
+                            <Text strong className='cvat-task-total-jobs'>
+                                {`${numOfJobs} job${numOfJobs === 1 ? '' : 's'}`}
+                            </Text>
                             <Text type='secondary'>
-                                {`${numOfJobs} jobs`}
+                                {`${totalFrames} frame${totalFrames === 1 ? '' : 's'}`}
                             </Text>
                         </div>
                         <div className='cvat-task-item-frames-progress'>

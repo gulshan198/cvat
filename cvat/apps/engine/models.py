@@ -776,6 +776,51 @@ def clear_annotations_in_jobs(job_ids: Iterable[int]):
 
 
 @transaction.atomic(savepoint=False)
+def clear_annotations_on_frames_in_task(db_task: Task, frames: Sequence[int]):
+    """
+    Delete all annotations (shapes, tags, track keyframes) located on the given task frames.
+    Used when frames are deleted so annotation progress stays consistent.
+    """
+    for frames_batch in take_by(frames, chunk_size=1000):
+        LabeledShapeAttributeVal.objects.filter(
+            shape__job__segment__task_id=db_task.id,
+            shape__frame__in=frames_batch,
+        ).delete()
+        # skeleton elements share the frame with their parent, so a plain
+        # frame filter removes both parents and children in one statement
+        LabeledShape.objects.filter(
+            job__segment__task_id=db_task.id,
+            frame__in=frames_batch,
+        ).delete()
+
+        LabeledImageAttributeVal.objects.filter(
+            image__job__segment__task_id=db_task.id,
+            image__frame__in=frames_batch,
+        ).delete()
+        LabeledImage.objects.filter(
+            job__segment__task_id=db_task.id,
+            frame__in=frames_batch,
+        ).delete()
+
+        TrackedShapeAttributeVal.objects.filter(
+            shape__track__job__segment__task_id=db_task.id,
+            shape__frame__in=frames_batch,
+        ).delete()
+        TrackedShape.objects.filter(
+            track__job__segment__task_id=db_task.id,
+            frame__in=frames_batch,
+        ).delete()
+
+    # remove tracks that no longer have any keyframes left
+    empty_tracks = LabeledTrack.objects.filter(
+        job__segment__task_id=db_task.id,
+        shape__isnull=True,
+    )
+    LabeledTrackAttributeVal.objects.filter(track__in=empty_tracks).delete()
+    empty_tracks.delete()
+
+
+@transaction.atomic(savepoint=False)
 def clear_annotations_on_frames_in_honeypot_task(db_task: Task, frames: Sequence[int]):
     if db_task.data.validation_mode != ValidationMode.GT_POOL:
         # Tracks and intervals are prohibited in honeypot tasks

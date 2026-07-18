@@ -42,22 +42,23 @@ function JobCardComponent(props: Readonly<Props>): JSX.Element {
     const history = useHistory();
     const height = useCardHeight();
     const { itemRef, handleContextMenuClick, handleContextMenuCapture } = useContextMenuClick<HTMLDivElement>();
-    const handleCardClick = useCallback((event: React.MouseEvent): void => {
+
+    const openJob = useCallback((event: React.MouseEvent): void => {
         const cancel = onClick(event);
         if (!cancel) {
             const url = `/tasks/${job.taskId}/jobs/${job.id}`;
-            if (event.ctrlKey) {
+            if (event.ctrlKey || event.metaKey) {
                 window.open(url, '_blank', 'noopener noreferrer');
             } else {
                 history.push(url);
             }
         }
-    }, [job, onClick]);
+    }, [job, onClick, history]);
 
-    const style = {};
+    const style: React.CSSProperties = { height, cursor: 'pointer' };
     if (deleted) {
-        (style as any).pointerEvents = 'none';
-        (style as any).opacity = 0.5;
+        style.pointerEvents = 'none';
+        style.opacity = 0.5;
     }
 
     let tag = null;
@@ -84,34 +85,35 @@ function JobCardComponent(props: Readonly<Props>): JSX.Element {
     const card = (
         <Card
             ref={itemRef}
-            style={{ ...style, height }}
+            style={style}
             className={cardClassName}
             cover={(
                 <>
                     <Preview
                         job={job}
-                        onClick={handleCardClick}
+                        onClick={openJob}
                         loadingClassName='cvat-job-item-loading-preview'
                         emptyPreviewClassName='cvat-job-item-empty-preview'
                         previewWrapperClassName='cvat-jobs-page-job-item-card-preview-wrapper'
                         previewClassName='cvat-jobs-page-job-item-card-preview'
                     />
                     <div className='cvat-job-page-list-item-id'>
-                        ID:
-                        {` ${job.id}`}
+                        {`Job #${job.id}`}
                     </div>
                     {tag && <div className='cvat-job-page-list-item-type'>{tag}</div>}
                     <div className='cvat-job-page-list-item-dimension'>{job.dimension.toUpperCase()}</div>
                 </>
             )}
             hoverable
-            onClick={onClick}
+            onClick={openJob}
             onContextMenuCapture={handleContextMenuCapture}
         >
             <div className='cvat-job-card-body'>
                 <div className='cvat-job-card-stage-state'>
                     <span className='cvat-job-card-label'>Stage &amp; state</span>
-                    <span className='cvat-job-card-value'>{`${job.stage} · ${job.state}`}</span>
+                    <span className='cvat-job-card-value cvat-job-card-stage-pill'>
+                        {`${job.stage} · ${job.state}`}
+                    </span>
                 </div>
                 <div className='cvat-job-card-annotation-progress'>
                     <div className='cvat-job-card-progress-header'>
@@ -135,7 +137,10 @@ function JobCardComponent(props: Readonly<Props>): JSX.Element {
                 </div>
             </div>
             <div
-                onClick={handleContextMenuClick}
+                onClick={(event: React.MouseEvent) => {
+                    event.stopPropagation();
+                    handleContextMenuClick(event);
+                }}
                 className='cvat-job-card-more-button cvat-actions-menu-button'
             >
                 <MoreOutlined className='cvat-menu-icon' />
