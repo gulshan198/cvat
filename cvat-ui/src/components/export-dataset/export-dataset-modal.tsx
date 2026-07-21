@@ -193,7 +193,7 @@ function ExportDatasetModal(props: Readonly<StateToProps>): JSX.Element {
                             exportDatasetAsync(
                                 inst,
                                 values.selectedFormat as string,
-                                isJobExport ? false : values.saveImages,
+                                values.saveImages,
                                 isJobExport ? true : false,
                                 isJobExport ? new Storage({
                                     location: inst.targetStorage.location,
@@ -211,7 +211,7 @@ function ExportDatasetModal(props: Readonly<StateToProps>): JSX.Element {
                     ),
                 ));
                 closeModal();
-                const resource = (isJobExport ? false : values.saveImages) ? 'Dataset' : 'Annotations';
+                const resource = values.saveImages ? 'Dataset' : 'Annotations';
                 const description =
                     `Bulk ${resource.toLowerCase()} export was started. ` +
                     'You can check progress and download the file [here](/requests).';
@@ -225,7 +225,7 @@ function ExportDatasetModal(props: Readonly<StateToProps>): JSX.Element {
                 return;
             }
             // have to validate format before so it would not be undefined
-            const saveImages = isJobExport ? false : values.saveImages;
+            const saveImages = values.saveImages;
             const useDefaultStorage = isJobExport ? true : useDefaultTargetStorage;
             dispatch(
                 exportDatasetAsync(
@@ -336,18 +336,16 @@ function ExportDatasetModal(props: Readonly<StateToProps>): JSX.Element {
                             )}
                     </Select>
                 </Form.Item>
-                {!isJobExport && (
-                    <Space>
-                        <Form.Item
-                            className='cvat-modal-export-switch-use-default-storage'
-                            name='saveImages'
-                            valuePropName='checked'
-                        >
-                            <Switch className='cvat-modal-export-save-images' />
-                        </Form.Item>
-                        <Text strong>Save images</Text>
-                    </Space>
-                )}
+                <Space>
+                    <Form.Item
+                        className='cvat-modal-export-switch-use-default-storage'
+                        name='saveImages'
+                        valuePropName='checked'
+                    >
+                        <Switch className='cvat-modal-export-save-images' />
+                    </Form.Item>
+                    <Text strong>Save images</Text>
+                </Space>
                 {isBulkMode ? (
                     <Form.Item label={<Text strong>Name template</Text>} required>
                         <Input
