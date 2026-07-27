@@ -147,7 +147,7 @@ function ExportDatasetModal(props: Readonly<StateToProps>): JSX.Element {
             newInstanceType = 'job';
         }
 
-        const initialSelectedFormat = 'Ultralytics YOLO Oriented Bounding Boxes 1.0';
+        const initialSelectedFormat = 'Guardex track 1.0';
         form.setFieldsValue({ selectedFormat: initialSelectedFormat });
         setSelectedFormat(initialSelectedFormat);
         setNameTemplate(`dataset_${newInstanceType}_{{id}}`);

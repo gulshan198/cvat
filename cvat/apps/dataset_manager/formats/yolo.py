@@ -24,7 +24,11 @@ from cvat.apps.dataset_manager.bindings import (
 from cvat.apps.dataset_manager.util import make_zip_archive
 
 from .registry import dm_env, exporter, importer
-from .transformations import EllipsesToMasks, SetKeyframeForEveryTrackShape
+from .transformations import (
+    EllipsesToMasks,
+    RotatedBoxesToAxisAlignedBoxes,
+    SetKeyframeForEveryTrackShape,
+)
 
 
 def _export_common(
@@ -104,6 +108,21 @@ def _export_yolo_ultralytics_detection(*args, **kwargs):
 @exporter(name="Ultralytics YOLO Detection Track", ext="ZIP", version="1.0")
 def _export_yolo_ultralytics_detection_track(*args, **kwargs):
     _export_common(*args, format_name="yolo_ultralytics_detection", write_track_id=True, **kwargs)
+
+
+@exporter(name="Guardex track", ext="ZIP", version="1.0")
+def _export_guardex_track(dst_file, temp_dir, instance_data, *, save_images=False):
+    with GetCVATDataExtractor(instance_data, include_images=save_images) as extractor:
+        dataset = StreamDataset.from_extractors(extractor, env=dm_env)
+        dataset = dataset.transform(RotatedBoxesToAxisAlignedBoxes)
+        dataset.export(
+            temp_dir,
+            "yolo_ultralytics_detection",
+            save_media=save_images,
+            # write_track_id=True,
+        )
+
+    make_zip_archive(temp_dir, dst_file)
 
 
 @exporter(name="Ultralytics YOLO Oriented Bounding Boxes", ext="ZIP", version="1.0")

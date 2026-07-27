@@ -51,6 +51,57 @@ class RotatedBoxesToPolygons(dm.ItemTransform):
         return item.wrap(annotations=lambda: self._convert_annotations(item))
 
 
+class RotatedBoxesToAxisAlignedBoxes(dm.ItemTransform):
+    def _rotate_point(self, p, angle, cx, cy):
+        [x, y] = p
+        rx = cx + math.cos(angle) * (x - cx) - math.sin(angle) * (y - cy)
+        ry = cy + math.sin(angle) * (x - cx) + math.cos(angle) * (y - cy)
+        return rx, ry
+
+    def _convert_annotations(self, item: dm.DatasetItem) -> list[dm.Annotation]:
+        annotations = []
+        for ann in item.annotations:
+            if ann.type != dm.AnnotationType.bbox:
+                annotations.append(ann)
+                continue
+
+            rotation = ann.attributes.get("rotation", 0)
+            if rotation % 360.0 <= 0.00001:
+                annotations.append(ann)
+                continue
+
+            rotation_radians = math.radians(rotation)
+            x0, y0, x1, y1 = ann.points
+            cx = x0 + (x1 - x0) / 2
+            cy = y0 + (y1 - y0) / 2
+            corners = [
+                self._rotate_point(p, rotation_radians, cx, cy)
+                for p in [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
+            ]
+            xs, ys = zip(*corners)
+            min_x, max_x = min(xs), max(xs)
+            min_y, max_y = min(ys), max(ys)
+
+            attributes = dict(ann.attributes)
+            attributes["rotation"] = 0
+            annotations.append(
+                dm.Bbox(
+                    min_x,
+                    min_y,
+                    max_x - min_x,
+                    max_y - min_y,
+                    label=ann.label,
+                    attributes=attributes,
+                    group=ann.group,
+                    z_order=ann.z_order,
+                )
+            )
+        return annotations
+
+    def transform_item(self, item):
+        return item.wrap(annotations=lambda: self._convert_annotations(item))
+
+
 class MaskConverter:
     @staticmethod
     def cvat_rle_to_dm_rle(shape, img_h: int, img_w: int) -> dm.RleMask:
