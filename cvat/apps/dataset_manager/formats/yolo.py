@@ -112,14 +112,17 @@ def _export_yolo_ultralytics_detection_track(*args, **kwargs):
 
 @exporter(name="Guardex track", ext="ZIP", version="1.0")
 def _export_guardex_track(dst_file, temp_dir, instance_data, *, save_images=False):
-    with GetCVATDataExtractor(instance_data, include_images=save_images) as extractor:
+    with GetCVATDataExtractor(
+        instance_data,
+        include_images=save_images,
+        format_type="guardex_track",
+    ) as extractor:
         dataset = StreamDataset.from_extractors(extractor, env=dm_env)
         dataset = dataset.transform(RotatedBoxesToAxisAlignedBoxes)
         dataset.export(
             temp_dir,
             "yolo_ultralytics_detection",
             save_media=save_images,
-            # write_track_id=True,
         )
 
     make_zip_archive(temp_dir, dst_file)

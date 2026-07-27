@@ -2243,11 +2243,19 @@ class CvatToDmAnnotationConverter:
             )
         elif shape.type == ShapeType.RECTANGLE:
             x0, y0, x1, y1 = dm_points
+            width = x1 - x0
+            height = y1 - y0
+            rotation = float(dm_attr.get("rotation", 0) or 0)
+            if self.format_name == "guardex_track" and rotation % 360.0 > 0.00001:
+                from cvat.apps.dataset_manager.formats.transformations import bbox_to_axis_aligned
+
+                x0, y0, width, height = bbox_to_axis_aligned(x0, y0, width, height, rotation)
+                dm_attr["rotation"] = 0
             anno = dm.Bbox(
                 x0,
                 y0,
-                x1 - x0,
-                y1 - y0,
+                width,
+                height,
                 label=dm_label,
                 attributes=dm_attr,
                 group=dm_group,

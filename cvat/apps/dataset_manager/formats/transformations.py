@@ -52,54 +52,60 @@ class RotatedBoxesToPolygons(dm.ItemTransform):
 
 
 class RotatedBoxesToAxisAlignedBoxes(dm.ItemTransform):
-    def _rotate_point(self, p, angle, cx, cy):
-        [x, y] = p
-        rx = cx + math.cos(angle) * (x - cx) - math.sin(angle) * (y - cy)
-        ry = cy + math.sin(angle) * (x - cx) + math.cos(angle) * (y - cy)
+    def transform_item(self, item):
+        return item.wrap(annotations=lambda: bbox_annotations_to_axis_aligned(item.annotations))
+
+
+def bbox_to_axis_aligned(x: float, y: float, w: float, h: float, rotation_degrees: float) -> tuple[float, float, float, float]:
+    rotation = float(rotation_degrees or 0) % 360.0
+    if rotation <= 0.00001 or rotation >= 360.0 - 0.00001:
+        return x, y, w, h
+
+    rotation_radians = math.radians(rotation)
+    x0, y0, x1, y1 = x, y, x + w, y + h
+    cx = x0 + w / 2
+    cy = y0 + h / 2
+
+    def rotate_point(px: float, py: float) -> tuple[float, float]:
+        rx = cx + math.cos(rotation_radians) * (px - cx) - math.sin(rotation_radians) * (py - cy)
+        ry = cy + math.sin(rotation_radians) * (px - cx) + math.cos(rotation_radians) * (py - cy)
         return rx, ry
 
-    def _convert_annotations(self, item: dm.DatasetItem) -> list[dm.Annotation]:
-        annotations = []
-        for ann in item.annotations:
-            if ann.type != dm.AnnotationType.bbox:
-                annotations.append(ann)
-                continue
+    corners = [rotate_point(px, py) for px, py in [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]]
+    xs, ys = zip(*corners)
+    min_x, max_x = min(xs), max(xs)
+    min_y, max_y = min(ys), max(ys)
+    return min_x, min_y, max_x - min_x, max_y - min_y
 
-            rotation = ann.attributes.get("rotation", 0)
-            if rotation % 360.0 <= 0.00001:
-                annotations.append(ann)
-                continue
 
-            rotation_radians = math.radians(rotation)
-            x0, y0, x1, y1 = ann.points
-            cx = x0 + (x1 - x0) / 2
-            cy = y0 + (y1 - y0) / 2
-            corners = [
-                self._rotate_point(p, rotation_radians, cx, cy)
-                for p in [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
-            ]
-            xs, ys = zip(*corners)
-            min_x, max_x = min(xs), max(xs)
-            min_y, max_y = min(ys), max(ys)
+def bbox_annotations_to_axis_aligned(annotations: list[dm.Annotation]) -> list[dm.Annotation]:
+    converted = []
+    for ann in annotations:
+        if ann.type != dm.AnnotationType.bbox:
+            converted.append(ann)
+            continue
 
-            attributes = dict(ann.attributes)
-            attributes["rotation"] = 0
-            annotations.append(
-                dm.Bbox(
-                    min_x,
-                    min_y,
-                    max_x - min_x,
-                    max_y - min_y,
-                    label=ann.label,
-                    attributes=attributes,
-                    group=ann.group,
-                    z_order=ann.z_order,
-                )
+        rotation = float(ann.attributes.get("rotation", 0) or 0) % 360.0
+        if rotation <= 0.00001 or rotation >= 360.0 - 0.00001:
+            converted.append(ann)
+            continue
+
+        x, y, w, h = bbox_to_axis_aligned(ann.x, ann.y, ann.w, ann.h, rotation)
+        attributes = dict(ann.attributes)
+        attributes["rotation"] = 0
+        converted.append(
+            dm.Bbox(
+                x,
+                y,
+                w,
+                h,
+                label=ann.label,
+                attributes=attributes,
+                group=ann.group,
+                z_order=ann.z_order,
             )
-        return annotations
-
-    def transform_item(self, item):
-        return item.wrap(annotations=lambda: self._convert_annotations(item))
+        )
+    return converted
 
 
 class MaskConverter:
