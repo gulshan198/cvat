@@ -24,11 +24,7 @@ from cvat.apps.dataset_manager.bindings import (
 from cvat.apps.dataset_manager.util import make_zip_archive
 
 from .registry import dm_env, exporter, importer
-from .transformations import (
-    EllipsesToMasks,
-    RotatedBoxesToAxisAlignedBoxes,
-    SetKeyframeForEveryTrackShape,
-)
+from .transformations import EllipsesToMasks, SetKeyframeForEveryTrackShape
 
 
 def _export_common(
@@ -38,9 +34,14 @@ def _export_common(
     format_name: str,
     *,
     save_images: bool = False,
+    format_type: str | None = None,
     **kwargs,
 ):
-    with GetCVATDataExtractor(instance_data, include_images=save_images) as extractor:
+    with GetCVATDataExtractor(
+        instance_data,
+        include_images=save_images,
+        format_type=format_type,
+    ) as extractor:
         dataset = StreamDataset.from_extractors(extractor, env=dm_env)
         dataset.export(temp_dir, format_name, save_media=save_images, **kwargs)
 
@@ -111,21 +112,16 @@ def _export_yolo_ultralytics_detection_track(*args, **kwargs):
 
 
 @exporter(name="Guardex track", ext="ZIP", version="1.0")
-def _export_guardex_track(dst_file, temp_dir, instance_data, *, save_images=False):
-    with GetCVATDataExtractor(
-        instance_data,
-        include_images=save_images,
+def _export_guardex_track(*args, **kwargs):
+    # Convert rotated rectangles to AABB in the CVAT extractor (format_type),
+    # then export with the standard Ultralytics Detection writer.
+    # Do not use StreamDataset.transform here — it can drop all frames on stream export.
+    _export_common(
+        *args,
+        format_name="yolo_ultralytics_detection",
         format_type="guardex_track",
-    ) as extractor:
-        dataset = StreamDataset.from_extractors(extractor, env=dm_env)
-        dataset = dataset.transform(RotatedBoxesToAxisAlignedBoxes)
-        dataset.export(
-            temp_dir,
-            "yolo_ultralytics_detection",
-            save_media=save_images,
-        )
-
-    make_zip_archive(temp_dir, dst_file)
+        **kwargs,
+    )
 
 
 @exporter(name="Ultralytics YOLO Oriented Bounding Boxes", ext="ZIP", version="1.0")
