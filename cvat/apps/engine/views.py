@@ -34,6 +34,7 @@ from drf_spectacular.utils import (
     PolymorphicProxySerializer,
     extend_schema,
     extend_schema_view,
+    inline_serializer,
 )
 from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.decorators import action
@@ -58,6 +59,7 @@ from cvat.apps.engine.cache import (
 from cvat.apps.engine.cloud_provider import Status as CloudStorageStatus
 from cvat.apps.engine.cloud_provider import db_storage_to_storage_instance
 from cvat.apps.engine.exceptions import CloudStorageMissingError
+from cvat.apps.engine.gcs_mirror import get_mirror_path_prefix
 from cvat.apps.engine.media_extractors import get_mime, get_video_chapters
 from cvat.apps.engine.media_io.audio_provider import (
     IAudioProvider,
@@ -329,6 +331,20 @@ class ServerViewSet(viewsets.ViewSet):
             ),  # not used anymore, remove later
         }
         return Response(PluginsSerializer(data).data)
+
+    @staticmethod
+    @extend_schema(
+        summary="Get the GCS folder that uploaded task images are copied to",
+        responses={
+            "200": inline_serializer(
+                "GcsMirrorSerializer",
+                fields={"path_prefix": serializers.CharField(allow_null=True)},
+            ),
+        },
+    )
+    @action(detail=False, methods=["GET"], url_path="guardex/gcs-mirror")
+    def gcs_mirror(request: ExtendedRequest):
+        return Response({"path_prefix": get_mirror_path_prefix()})
 
 
 @extend_schema(tags=["projects"])

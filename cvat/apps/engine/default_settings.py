@@ -120,3 +120,15 @@ if DEFAULT_BACKING_CS_ID:
     DEFAULT_BACKING_CS_ID = int(DEFAULT_BACKING_CS_ID)
 else:
     DEFAULT_BACKING_CS_ID = None
+
+GUARDEX_GCS_MIRROR_CLOUD_STORAGE_ID = os.getenv("GUARDEX_GCS_MIRROR_CLOUD_STORAGE_ID")
+"""
+ID of the cloud storage that raw images of locally uploaded tasks are copied to
+after task creation. If not set or blank, the copy is disabled.
+"""
+if GUARDEX_GCS_MIRROR_CLOUD_STORAGE_ID:
+    GUARDEX_GCS_MIRROR_CLOUD_STORAGE_ID = int(GUARDEX_GCS_MIRROR_CLOUD_STORAGE_ID)
+else:
+    GUARDEX_GCS_MIRROR_CLOUD_STORAGE_ID = None
+
+GUARDEX_GCS_MIRROR_PREFIX = os.getenv("GUARDEX_GCS_MIRROR_PREFIX", "raw_images").strip("/")

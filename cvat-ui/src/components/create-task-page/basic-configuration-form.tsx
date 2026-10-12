@@ -18,6 +18,7 @@ interface Props {
     onChange(values: BaseConfiguration): void;
     many: boolean;
     exampleMultiTaskName?: string;
+    storagePathPreview?: string;
 }
 
 type InputRef = React.ComponentRef<typeof Input>;
@@ -71,7 +72,7 @@ export default class BasicConfigurationForm extends React.PureComponent<Props> {
     }
 
     public render(): JSX.Element {
-        const { many, exampleMultiTaskName } = this.props;
+        const { many, exampleMultiTaskName, storagePathPreview } = this.props;
 
         return (
             <Form ref={this.formRef} layout='vertical'>
@@ -126,6 +127,13 @@ export default class BasicConfigurationForm extends React.PureComponent<Props> {
                             {' '}
                             <QuestionCircleOutlined />
                         </Tooltip>
+                    </Text>
+                ) : null}
+                {storagePathPreview ? (
+                    <Text type='secondary' className='cvat-task-storage-path-preview'>
+                        Images will also be saved to
+                        {' '}
+                        <Text code>{storagePathPreview}</Text>
                     </Text>
                 ) : null}
             </Form>

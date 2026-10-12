@@ -63,6 +63,7 @@ type State = CreateTaskData & {
     uploadFileErrorMessage: string;
     loading: boolean;
     statusInProgressTask: string;
+    gcsMirrorPathPrefix: string | null;
 };
 
 const defaultState: State = {
@@ -106,6 +107,7 @@ const defaultState: State = {
     uploadFileErrorMessage: '',
     loading: false,
     statusInProgressTask: '',
+    gcsMirrorPathPrefix: null,
 };
 
 const UploadFileErrorMessages = {
@@ -156,6 +158,11 @@ function validateRemoteFiles(remoteFiles: RemoteFile[], many: boolean): string {
     return uploadFileErrorMessage;
 }
 
+// must match task_folder_slug in cvat/apps/engine/gcs_mirror.py
+function taskFolderSlug(name: string): string {
+    return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
 function filterFiles(remoteFiles: RemoteFile[], many: boolean): RemoteFile[] {
     if (many) {
         return remoteFiles.filter((file: RemoteFile) => file.mimeType === 'video');
@@ -185,6 +192,7 @@ class CreateTaskContent extends React.PureComponent<Props & RouteComponentProps,
             this.handleProjectIdChange(projectId);
         }
 
+        this.fetchGcsMirrorPathPrefix();
         this.focusToForm();
     }
 
@@ -208,7 +216,20 @@ class CreateTaskContent extends React.PureComponent<Props & RouteComponentProps,
         this.setState((state) => ({
             ...defaultState,
             projectId: state.projectId,
+            gcsMirrorPathPrefix: state.gcsMirrorPathPrefix,
         }));
+    };
+
+    private fetchGcsMirrorPathPrefix = async (): Promise<void> => {
+        try {
+            const response = await core.server.request<{ data: { path_prefix: string | null } }>(
+                `${core.config.backendAPI}/server/guardex/gcs-mirror`,
+                { method: 'GET' },
+            );
+            this.setState({ gcsMirrorPathPrefix: response.data.path_prefix });
+        } catch {
+            this.setState({ gcsMirrorPathPrefix: null });
+        }
     };
 
     private validateFiles = (): boolean => {
@@ -778,7 +799,11 @@ class CreateTaskContent extends React.PureComponent<Props & RouteComponentProps,
 
     private renderBasicBlock(): JSX.Element {
         const { many } = this.props;
+        const { basic, activeFileManagerTab, gcsMirrorPathPrefix } = this.state;
         const exampleMultiTaskName = many ? this.getTaskName(0, 'local', 'fileName.mp4') : '';
+        const slug = taskFolderSlug(basic.name);
+        const storagePathPreview = gcsMirrorPathPrefix && !many && activeFileManagerTab === 'local' && slug ?
+            `${gcsMirrorPathPrefix}/${slug}` : undefined;
 
         return (
             <Col span={24}>
@@ -786,6 +811,7 @@ class CreateTaskContent extends React.PureComponent<Props & RouteComponentProps,
                     ref={this.basicConfigurationComponent}
                     many={many}
                     exampleMultiTaskName={exampleMultiTaskName}
+                    storagePathPreview={storagePathPreview}
                     onChange={this.handleChangeBasicConfiguration}
                 />
             </Col>

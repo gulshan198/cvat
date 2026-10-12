@@ -139,6 +139,7 @@ class ServerPermission(OpenPolicyAgentPermission):
                 ("annotation_formats", "GET"): Scopes.VIEW,
                 ("about", "GET"): Scopes.VIEW,
                 ("plugins", "GET"): Scopes.VIEW,
+                ("gcs_mirror", "GET"): Scopes.VIEW,
                 ("share", "GET"): Scopes.LIST_CONTENT,
             }[(view.action, request.method)]
         ]

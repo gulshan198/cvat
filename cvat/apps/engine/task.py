@@ -27,6 +27,7 @@ from django.forms.models import model_to_dict
 from rest_framework.serializers import ValidationError
 
 from cvat.apps.engine import field_validation, models
+from cvat.apps.engine.gcs_mirror import schedule_task_mirroring
 from cvat.apps.engine.log import ServerLogManager
 from cvat.apps.engine.media_extractors import (
     MEDIA_TYPES,
@@ -2037,6 +2038,9 @@ def create_thread(
         _create_task_preview(db_task)
 
     _move_to_backing_cs_if_configured(db_data)
+
+    if not is_backup_restore:
+        schedule_task_mirroring(db_task)
 
 
 def _create_task_preview(db_task: models.Task):
