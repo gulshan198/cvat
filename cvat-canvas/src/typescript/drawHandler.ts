@@ -400,6 +400,19 @@ export class DrawHandlerImpl implements DrawHandler {
             }
             // Clear drawing
             this.drawInstance.draw('stop');
+            // A 4-point rectangle is a polygon internally. `draw('stop')` emits
+            // `drawstop` only, and this path has no `drawstop` listener, so the UI
+            // would stay in draw mode while the canvas is already idle.
+            // Successful completion calls `cancel()` first (`this.canceled`), which
+            // still reports the shape through `onDrawDone(data)` and keeps
+            // continuous drawing / save-and-advance intact.
+            if (
+                !this.canceled &&
+                this.drawData.shapeType === 'rectangle' &&
+                this.drawData.rectDrawingMethod === RectDrawingMethod.EXTREME_POINTS
+            ) {
+                this.onDrawDone(null);
+            }
         } else {
             this.onDrawDone(null);
             if (this.drawInstance && this.drawData.shapeType === 'ellipse' && !this.drawData.initialState) {
@@ -565,6 +578,10 @@ export class DrawHandlerImpl implements DrawHandler {
                             points: [xtl, ytl, xbr, ybr],
                         },
                         Date.now() - this.startTimestamp);
+                    } else {
+                        // Zero-area box: tell the UI drawing stopped so the tool can be used again.
+                        // `cancel()` above set `this.canceled`, so `release()` will not report twice.
+                        this.onDrawDone(null);
                     }
                 }
             })
