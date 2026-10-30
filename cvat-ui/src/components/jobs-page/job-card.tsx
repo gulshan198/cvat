@@ -8,11 +8,13 @@ import { useSelector } from 'react-redux';
 import { useHistory } from 'react-router';
 import Card from 'antd/lib/card';
 import Progress from 'antd/lib/progress';
+import dayjs from 'dayjs';
 import { MoreOutlined } from '@ant-design/icons';
 
 import { Job, JobType } from 'cvat-core-wrapper';
 import { useCardHeightHOC, useContextMenuClick } from 'utils/hooks';
 import Preview from 'components/common/preview';
+import CVATTooltip from 'components/common/cvat-tooltip';
 import { CombinedState } from 'reducers';
 import JobActionsComponent from './actions-menu';
 
@@ -134,6 +136,21 @@ function JobCardComponent(props: Readonly<Props>): JSX.Element {
                     <span className='cvat-job-card-value'>
                         {job.assignee ? job.assignee.username : '—'}
                     </span>
+                </div>
+                <div className='cvat-job-card-updated'>
+                    <span className='cvat-job-card-label'>Last updated</span>
+                    <CVATTooltip
+                        title={
+                            job.updatedDate
+                                ? dayjs(job.updatedDate).format('YYYY-MM-DD HH:mm:ss Z')
+                                : ''
+                        }
+                    >
+                        <span className='cvat-job-card-value'>
+                            {job.updatedDate ? `Updated ${dayjs(job.updatedDate).fromNow()}` : '—'}
+                            {job.updatedBy?.username ? ` by ${job.updatedBy.username}` : ''}
+                        </span>
+                    </CVATTooltip>
                 </div>
             </div>
             <div

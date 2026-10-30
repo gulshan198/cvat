@@ -187,9 +187,12 @@ function JobItem(props: Readonly<Props>): JSX.Element {
                         )}
                     </Row>
                     <div className='cvat-job-item-meta'>
-                        <Text type='secondary'>
-                            {`Updated ${updated.fromNow()}`}
-                        </Text>
+                        <CVATTooltip title={updated.isValid() ? updated.format('YYYY-MM-DD HH:mm:ss Z') : ''}>
+                            <Text type='secondary' className='cvat-job-item-updated'>
+                                {`Updated ${updated.fromNow()}`}
+                                {job.updatedBy?.username ? ` by ${job.updatedBy.username}` : ''}
+                            </Text>
+                        </CVATTooltip>
                         <Text type='secondary' className='cvat-job-item-created'>
                             {`Created ${formatDate(created)}`}
                         </Text>
