@@ -2280,7 +2280,7 @@ class JobViewSet(
         if self.action == "list":
             perm = JobPermission.create_scope_list(self.request)
             queryset = perm.filter(queryset)
-            queryset = queryset.select_related("assignee")
+            queryset = queryset.select_related("assignee", "updated_by")
             # with_* optimized in JobReadListSerializer
         elif self.action not in ("annotations", "metadata"):
             queryset = queryset.select_related("segment__task__data")
@@ -2288,6 +2288,7 @@ class JobViewSet(
             if self.action in ("create", "retrieve", "update", "partial_update", "destroy"):
                 queryset = queryset.select_related(
                     "assignee",
+                    "updated_by",
                     "segment__task__annotation_guide",
                     "segment__task__project__annotation_guide",
                 )

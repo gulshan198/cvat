@@ -1164,6 +1164,7 @@ class JobReadSerializer(serializers.ModelSerializer):
     stop_frame = serializers.ReadOnlyField(source="segment.stop_frame")
     frame_count = serializers.ReadOnlyField(source="segment.frame_count")
     assignee = BasicUserSerializer(allow_null=True, read_only=True)
+    updated_by = BasicUserSerializer(allow_null=True, read_only=True)
 
     # We're using CharField to produce simple strings instead of enums in the generated SDK.
     # SDK enums require explicit .value calls to access the string representation.
@@ -1227,6 +1228,7 @@ class JobReadSerializer(serializers.ModelSerializer):
             "data_original_chunk_type",
             "created_date",
             "updated_date",
+            "updated_by",
             "issues",
             "labels",
             "type",
@@ -1605,6 +1607,13 @@ class JobWriteSerializer(WriteOnceMixin, serializers.ModelSerializer):
             instance.update_assignee(assignee_id)
 
         instance = super().update(instance, validated_data)
+
+        request = self.context.get("request")
+        user = getattr(request, "user", None) if request is not None else None
+        if user is not None and getattr(user, "is_authenticated", False):
+            instance.updated_by = user
+            instance.save(update_fields=["updated_by"])
+
         return instance
 
 

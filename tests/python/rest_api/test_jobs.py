@@ -1469,6 +1469,20 @@ class TestPatchJob:
             else:
                 assert updated_job.assignee is None
 
+    def test_can_set_updated_by_on_job_state_update(self, admin_user, jobs, users):
+        job = next(j for j in jobs if j.get("state") != "completed")
+        with make_api_client(admin_user) as api_client:
+            _, response = api_client.jobs_api.partial_update(
+                job["id"],
+                patched_job_write_request={"state": "completed"},
+                _parse_response=False,
+            )
+            assert response.status == HTTPStatus.OK
+            data = json.loads(response.data)
+            assert data["updated_by"] is not None
+            assert data["updated_by"]["username"] == admin_user
+            assert data["updated_date"] != job["updated_date"]
+
     def test_malefactor_cannot_obtain_job_details_via_empty_partial_update_request(
         self, regular_lonely_user, jobs
     ):
