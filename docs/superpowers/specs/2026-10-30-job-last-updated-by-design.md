@@ -38,7 +38,7 @@ Set `updated_by` to the requesting user whenever a job is updated through the no
 
 Do **not** set `updated_by` on touch-only `updated_date` bumps (same class of updates already skipped for analytics `update:job` events), so silent system touches do not attribute a person incorrectly.
 
-Existing jobs remain `updated_by=null` until the next real update; UI shows “Updated … by unknown” or omits “by …” when null.
+Existing jobs remain `updated_by=null` until the next real update; UI omits “by …” when null.
 
 ## API / core
 
