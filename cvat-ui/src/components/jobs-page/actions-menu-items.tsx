@@ -28,6 +28,10 @@ interface MenuItemsData {
     jobsToAct: Job[];
 }
 
+function jobAnalyticsPath(taskId: number, jobId: number): string {
+    return `/tasks/${taskId}/jobs/${jobId}/analytics`;
+}
+
 enum MenuKeys {
     EDIT_ASSIGNEE = 'edit_assignee',
     EDIT_STATE = 'edit_state',
@@ -50,6 +54,7 @@ export default function JobActionsItems(
 ): MenuProps['items'] {
     const {
         startEditField,
+        jobId,
         taskId,
         projectId,
         pluginActions,
@@ -143,6 +148,16 @@ export default function JobActionsItems(
         label: withCount('Export annotations', MenuKeys.EXPORT_JOB),
         disabled: isDisabled(MenuKeys.EXPORT_JOB),
     }, 60]);
+
+    menuItems.push([{
+        key: MenuKeys.VIEW_ANALYTICS,
+        label: withCount(
+            'View analytics',
+            MenuKeys.VIEW_ANALYTICS,
+            jobAnalyticsPath(taskId, jobId),
+        ),
+        disabled: isDisabled(MenuKeys.VIEW_ANALYTICS),
+    }, 65]);
 
     if (onMergeConsensusJob) {
         menuItems.push([{

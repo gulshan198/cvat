@@ -24,27 +24,16 @@ import { shallowEqual } from 'utils/redux';
 import GoBackButton from 'components/common/go-back-button';
 import AnalyticsDashboard from './analytics-dashboard';
 import { TimePeriod } from '.';
+import { defaultLast7DaysUtc, toUtcDayRange } from './date-range';
 
 const core = getCore();
 
-function localToUTC(date: Date): string {
-    return new Date((Number(date) - date.getTimezoneOffset() * 60000)).toISOString();
-}
-
-function defaultTimePeriod(): TimePeriod {
-    const end = dayjs.utc().endOf('day');
-    const start = end.subtract(6, 'day').startOf('day');
-    return {
-        startDate: start.toISOString(),
-        endDate: end.toISOString(),
-    };
-}
-
 function AnalyticsHubPage(): JSX.Element {
-    const [timePeriod, setTimePeriod] = useState<TimePeriod | null>(defaultTimePeriod);
+    const initialPeriod = defaultLast7DaysUtc();
+    const [timePeriod, setTimePeriod] = useState<TimePeriod | null>(initialPeriod);
     const [rangeValue, setRangeValue] = useState<[Dayjs, Dayjs] | null>([
-        dayjs.utc(defaultTimePeriod().startDate),
-        dayjs.utc(defaultTimePeriod().endDate),
+        dayjs.utc(initialPeriod.startDate),
+        dayjs.utc(initialPeriod.endDate),
     ]);
     const [projects, setProjects] = useState<Project[]>([]);
     const [users, setUsers] = useState<User[]>([]);
@@ -193,15 +182,16 @@ function AnalyticsHubPage(): JSX.Element {
                                         if (value) {
                                             const [from, to] = value;
                                             if (from && to) {
-                                                setRangeValue([from, to]);
-                                                setTimePeriod({
-                                                    startDate: localToUTC(from.toDate()),
-                                                    endDate: localToUTC(to.toDate()),
-                                                });
+                                                const period = toUtcDayRange(from.toDate(), to.toDate());
+                                                setRangeValue([
+                                                    dayjs.utc(period.startDate),
+                                                    dayjs.utc(period.endDate),
+                                                ]);
+                                                setTimePeriod(period);
                                                 return;
                                             }
                                         }
-                                        const fallback = defaultTimePeriod();
+                                        const fallback = defaultLast7DaysUtc();
                                         setRangeValue([
                                             dayjs.utc(fallback.startDate),
                                             dayjs.utc(fallback.endDate),

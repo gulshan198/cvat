@@ -50,9 +50,26 @@
     margin-top: $grid-unit-size * 2;
 }
 
-.cvat-analytics-help {
+.cvat-analytics-glossary {
+    margin-bottom: $grid-unit-size * 2;
+}
+
+.cvat-analytics-glossary-list {
+    margin: $grid-unit-size 0 0;
+    padding-left: $grid-unit-size * 3;
+
+    li {
+        margin-bottom: $grid-unit-size * 0.75;
+    }
+}
+
+.cvat-analytics-period-label {
     display: block;
     margin-bottom: $grid-unit-size * 2;
+}
+
+.cvat-analytics-block-title {
+    margin-bottom: $grid-unit-size !important;
 }
 
 .cvat-analytics-legacy-note,
@@ -65,14 +82,52 @@
     margin-bottom: $grid-unit-size * 2;
 }
 
+.cvat-analytics-kpi-card {
+    height: 100%;
+}
+
+.cvat-analytics-kpi-hint {
+    display: block;
+    margin-top: $grid-unit-size;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
 .cvat-analytics-chart-card {
     margin-bottom: $grid-unit-size * 2;
+}
+
+.cvat-analytics-section-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $grid-unit-size;
+}
+
+.cvat-analytics-section-meaning {
+    display: block;
+    margin-bottom: $grid-unit-size * 2;
+    line-height: 1.45;
 }
 
 .cvat-analytics-chart {
     height: 280px;
 }
 
+.cvat-analytics-inline-totals {
+    display: block;
+    margin-top: $grid-unit-size;
+}
+
 .cvat-analytics-drilldown {
-    margin-top: $grid-unit-size * 2;
+    margin-top: $grid-unit-size;
+    margin-bottom: $grid-unit-size * 2;
+}
+
+.cvat-analytics-tabs {
+    margin-top: $grid-unit-size;
+}
+
+.cvat-analytics-inventory-table {
+    margin-bottom: $grid-unit-size * 3;
 }

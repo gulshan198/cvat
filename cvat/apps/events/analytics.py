@@ -11,10 +11,18 @@ from typing import Any
 import clickhouse_connect
 from dateutil import parser
 from django.conf import settings
-from django.db.models import Count, Q
+from django.db.models import Count, Max, Min, Q
 from rest_framework import serializers
 
-from cvat.apps.engine.models import Job, Label, StageChoice, StateChoice
+from cvat.apps.engine.models import (
+    Job,
+    Label,
+    LabeledImage,
+    LabeledShape,
+    LabeledTrack,
+    StageChoice,
+    StateChoice,
+)
 from cvat.apps.events.const import WORKING_TIME_SCOPE
 from cvat.apps.events.utils import find_minimal_date_for_filter
 
@@ -67,6 +75,11 @@ def parse_summary_filters(query_params: dict[str, Any]) -> dict[str, Any]:
         )
         if minimal and minimal > from_dt:
             from_dt = minimal
+
+    # If both ends fall on the same calendar second/day start (common for single-day
+    # date pickers), expand `to` to end of that UTC day so the window is not empty.
+    if from_dt and to_dt and from_dt.date() == to_dt.date() and to_dt <= from_dt + timedelta(minutes=1):
+        to_dt = from_dt.replace(hour=23, minute=59, second=59, microsecond=999999)
 
     filters["from"] = from_dt
     filters["to"] = to_dt
@@ -453,6 +466,121 @@ def _pipeline_snapshot(filters: dict[str, Any]) -> dict[str, int]:
     }
 
 
+def _annotation_inventory(filters: dict[str, Any]) -> dict[str, Any]:
+    """Current annotation inventory (Premium Annotations tab), not time-filtered."""
+    job_ids = list(_job_queryset(filters).values_list("id", flat=True))
+    if not job_ids:
+        return {
+            "detections": [],
+            "tracking": [],
+            "totals": {"shapes": 0, "tags": 0, "tracks": 0, "images": 0},
+        }
+
+    detections: dict[int, dict[str, Any]] = {}
+
+    def ensure_detection(label_id: int, label_name: str) -> dict[str, Any]:
+        return detections.setdefault(
+            label_id,
+            {
+                "label_id": label_id,
+                "label_name": label_name or "unknown",
+                "by_type": {},
+                "total_shapes": 0,
+                "tags": 0,
+            },
+        )
+
+    shape_rows = (
+        LabeledShape.objects.filter(job_id__in=job_ids, parent__isnull=True)
+        .values("label_id", "label__name", "type")
+        .annotate(count=Count("id"))
+    )
+    for row in shape_rows:
+        entry = ensure_detection(row["label_id"], row["label__name"] or "")
+        shape_type = row["type"] or "unknown"
+        entry["by_type"][shape_type] = entry["by_type"].get(shape_type, 0) + int(row["count"])
+        entry["total_shapes"] += int(row["count"])
+
+    tag_rows = (
+        LabeledImage.objects.filter(job_id__in=job_ids)
+        .values("label_id", "label__name")
+        .annotate(count=Count("id"))
+    )
+    for row in tag_rows:
+        entry = ensure_detection(row["label_id"], row["label__name"] or "")
+        entry["tags"] += int(row["count"])
+
+    tracking: dict[int, dict[str, Any]] = {}
+
+    def ensure_tracking(label_id: int, label_name: str) -> dict[str, Any]:
+        return tracking.setdefault(
+            label_id,
+            {
+                "label_id": label_id,
+                "label_name": label_name or "unknown",
+                "by_type": {},
+                "keyframes": 0,
+                "interpolated": 0,
+                "tracks": 0,
+                "total_objects": 0,
+            },
+        )
+
+    track_qs = LabeledTrack.objects.filter(job_id__in=job_ids, parent__isnull=True).annotate(
+        keyframe_count=Count("shapes"),
+        frame_min=Min("shapes__frame"),
+        frame_max=Max("shapes__frame"),
+    )
+    for track in track_qs.select_related("label"):
+        entry = ensure_tracking(track.label_id, track.label.name if track.label else "")
+        entry["tracks"] += 1
+        keyframes = int(track.keyframe_count or 0)
+        entry["keyframes"] += keyframes
+        if track.frame_min is not None and track.frame_max is not None:
+            span = int(track.frame_max) - int(track.frame_min) + 1
+            entry["interpolated"] += max(0, span - keyframes)
+
+    # Shape types used on tracked keyframes
+    tracked_type_rows = (
+        LabeledTrack.objects.filter(job_id__in=job_ids, parent__isnull=True)
+        .values("label_id", "label__name", "shapes__type")
+        .annotate(count=Count("shapes__id"))
+    )
+    for row in tracked_type_rows:
+        if not row["shapes__type"]:
+            continue
+        entry = ensure_tracking(row["label_id"], row["label__name"] or "")
+        shape_type = row["shapes__type"]
+        entry["by_type"][shape_type] = entry["by_type"].get(shape_type, 0) + int(row["count"] or 0)
+
+    for entry in tracking.values():
+        entry["total_objects"] = entry["keyframes"] + entry["interpolated"]
+
+    images_total = 0
+    for job in _job_queryset(filters):
+        images_total += _job_frame_count(job)
+
+    detections_list = sorted(
+        detections.values(),
+        key=lambda row: (-(row["total_shapes"] + row["tags"]), row["label_name"]),
+    )
+    tracking_list = sorted(
+        tracking.values(),
+        key=lambda row: (-row["total_objects"], row["label_name"]),
+    )
+
+    return {
+        "detections": detections_list,
+        "tracking": tracking_list,
+        "totals": {
+            "shapes": sum(row["total_shapes"] for row in detections_list),
+            "tags": sum(row["tags"] for row in detections_list),
+            "tracks": sum(row["tracks"] for row in tracking_list),
+            "images": images_total,
+        },
+    }
+
+
 def build_analytics_summary(query_params: dict[str, Any]) -> dict[str, Any]:
     filters = parse_summary_filters(query_params)
 
@@ -481,6 +609,14 @@ def build_analytics_summary(query_params: dict[str, Any]) -> dict[str, Any]:
     )
     assignee_workload = _assignee_workload(filters, done_job_ids)
     pipeline = _pipeline_snapshot(filters)
+    inventory = _annotation_inventory(filters)
+
+    total_created = sum(row["created"] for row in objects_by_day)
+    total_deleted = sum(row["deleted"] for row in objects_by_day)
+    objects_diff = total_created - total_deleted
+    total_working_ms = sum(row["ms"] for row in working_time_by_user)
+    working_hours = total_working_ms / 3600000 if total_working_ms else 0
+    avg_annotation_speed = (objects_diff / working_hours) if working_hours > 0 else 0.0
 
     return {
         "period": {
@@ -488,10 +624,14 @@ def build_analytics_summary(query_params: dict[str, Any]) -> dict[str, Any]:
             "to": filters["to"].isoformat(),
         },
         "has_frame_label_data": has_enriched,
+        "objects_diff": objects_diff,
+        "total_working_time_ms": total_working_ms,
+        "avg_annotation_speed": round(avg_annotation_speed, 2),
         "annotated_images_by_day": annotated_images_by_day,
         "assignee_workload": assignee_workload,
         "objects_by_day": objects_by_day,
         "working_time_by_user": working_time_by_user,
         "pipeline": pipeline,
         "top_contributors": top_contributors,
+        "annotation_inventory": inventory,
     }

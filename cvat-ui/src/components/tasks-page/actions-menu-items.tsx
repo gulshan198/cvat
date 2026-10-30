@@ -71,6 +71,12 @@ export default function TaskActionsItems(menuItemsData: MenuItemsData, taskMenuP
         disabled: isDisabled('export_task_dataset'),
     }, 10]);
 
+    menuItems.push([{
+        key: 'view-analytics',
+        label: withCount('View analytics', 'view-analytics', `/tasks/${taskId}/analytics`),
+        disabled: isDisabled('view-analytics'),
+    }, 15]);
+
     if (onOpenBugTracker) {
         menuItems.push([{
             key: 'open_bug_tracker',

@@ -8,8 +8,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import notification from 'antd/lib/notification';
 import { Row, Col } from 'antd/lib/grid';
-import dayjs from 'utils/dayjs-wrapper';
-
 import {
     Project, Task, Job, getCore, MembershipRole, AnalyticsEventsFilter,
 } from 'cvat-core-wrapper';
@@ -21,22 +19,14 @@ import CVATLoadingSpinner from 'components/common/loading-spinner';
 import AnalyticsReportContent from './analytics-report-content';
 import AnalyticsPageHeader from './analytics-page-header';
 import { TimePeriod } from '.';
+import { defaultLast7DaysUtc, toUtcDayRange } from './date-range';
 
 const core = getCore();
-
-function defaultTimePeriod(): TimePeriod {
-    const end = dayjs.utc().endOf('day');
-    const start = end.subtract(6, 'day').startOf('day');
-    return {
-        startDate: start.toISOString(),
-        endDate: end.toISOString(),
-    };
-}
 
 function AnalyticsReportPage(): JSX.Element {
     const requestedInstanceType: InstanceType = useInstanceType();
     const requestedInstanceId = useInstanceId(requestedInstanceType);
-    const [timePeriod, setTimePeriod] = useState<TimePeriod | null>(defaultTimePeriod);
+    const [timePeriod, setTimePeriod] = useState<TimePeriod | null>(defaultLast7DaysUtc);
     const [exporting, setExporting] = useState(false);
     const [resource, setResource] = useState<Project | Task | Job | null>(null);
     const [fetching, setFetching] = useState(true);
@@ -159,19 +149,10 @@ function AnalyticsReportPage(): JSX.Element {
                                 timePeriod={timePeriod}
                                 onExportEvents={onExportEvents}
                                 onUpdateTimePeriod={(from: Date | null, to: Date | null) => {
-                                    function localToUTC(date: Date): string {
-                                        // convert local time to UTC string WITHOUT applying any timezone offset
-                                        // the user specified UTC time already in the date picker
-                                        // basically we only convert timezone information
-                                        return (
-                                            new Date((Number(date) - date.getTimezoneOffset() * 60000)).toISOString()
-                                        );
-                                    }
-
-                                    setTimePeriod((from && to) ? {
-                                        startDate: localToUTC(from),
-                                        endDate: localToUTC(to),
-                                    } : defaultTimePeriod());
+                                    // Expand to full UTC days so a single-day pick is 00:00–23:59, not 00:00–00:00
+                                    setTimePeriod(
+                                        (from && to) ? toUtcDayRange(from, to) : defaultLast7DaysUtc(),
+                                    );
                                 }}
                             />
                         )}

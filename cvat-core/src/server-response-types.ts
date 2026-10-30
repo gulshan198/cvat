@@ -145,7 +145,6 @@ export interface SerializedTask {
 
 export interface SerializedJob {
     assignee: SerializedUser | null;
-    updated_by?: SerializedUser | null;
     bug_tracker: string;
     data_chunk_size: number | null;
     data_compressed_chunk_type: ChunkType
@@ -456,18 +455,51 @@ export interface SerializedAnalyticsContributor {
     images: number;
 }
 
+export interface SerializedAnalyticsDetectionRow {
+    label_id: number;
+    label_name: string;
+    by_type: Record<string, number>;
+    total_shapes: number;
+    tags: number;
+}
+
+export interface SerializedAnalyticsTrackingRow {
+    label_id: number;
+    label_name: string;
+    by_type: Record<string, number>;
+    keyframes: number;
+    interpolated: number;
+    tracks: number;
+    total_objects: number;
+}
+
+export interface SerializedAnalyticsInventory {
+    detections: SerializedAnalyticsDetectionRow[];
+    tracking: SerializedAnalyticsTrackingRow[];
+    totals: {
+        shapes: number;
+        tags: number;
+        tracks: number;
+        images: number;
+    };
+}
+
 export interface SerializedAnalyticsSummary {
     period: {
         from: string;
         to: string;
     };
     has_frame_label_data: boolean;
+    objects_diff?: number;
+    total_working_time_ms?: number;
+    avg_annotation_speed?: number;
     annotated_images_by_day: SerializedAnalyticsDayImages[];
     assignee_workload: SerializedAnalyticsAssigneeWorkload[];
     objects_by_day: SerializedAnalyticsObjectsDay[];
     working_time_by_user: SerializedAnalyticsWorkingTime[];
     pipeline: SerializedAnalyticsPipeline;
     top_contributors: SerializedAnalyticsContributor[];
+    annotation_inventory?: SerializedAnalyticsInventory;
 }
 
 export interface SerializedInvitationData {

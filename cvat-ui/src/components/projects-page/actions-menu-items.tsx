@@ -52,6 +52,12 @@ export default function ProjectActionsItems(
     }, 0]);
 
     menuItems.push([{
+        key: 'view-analytics',
+        label: withCount('View analytics', 'view-analytics', `/projects/${projectId}/analytics`),
+        disabled: isDisabled('view-analytics'),
+    }, 5]);
+
+    menuItems.push([{
         key: 'import-dataset',
         onClick: onImportDataset,
         label: 'Import dataset',
