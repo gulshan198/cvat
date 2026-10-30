@@ -446,9 +446,14 @@ def handle_delete(scope, instance, store_in_deletion_cache=False, **kwargs):
 
 def handle_annotations_change(instance: Job, annotations, action, **kwargs):
     def filter_data(data):
-        return {
+        filtered = {
             "id": data["id"],
         }
+        if "frame" in data and data["frame"] is not None:
+            filtered["frame"] = data["frame"]
+        if "label_id" in data and data["label_id"] is not None:
+            filtered["label_id"] = data["label_id"]
+        return filtered
 
     in_mem_counter = TracksCounter()
     in_mem_counter.load_tracks_from_job(instance.id, annotations.get("tracks", []))
@@ -471,6 +476,11 @@ def handle_annotations_change(instance: Job, annotations, action, **kwargs):
         in_mem_shapes = in_mem_counter.count_track_shapes(job_id, track_id)
         in_mem_visible_shapes = in_mem_shapes["manual"] + in_mem_shapes["interpolated"]
         filtered_data = filter_data(track)
+        # Prefer an explicit frame; otherwise use the first keyframe for image metrics
+        if "frame" not in filtered_data and track.get("shapes"):
+            first_shape = track["shapes"][0]
+            if first_shape.get("frame") is not None:
+                filtered_data["frame"] = first_shape["frame"]
 
         if action == "create":
             filtered_data["visible_shapes_count_diff"] = in_mem_visible_shapes

@@ -441,6 +441,20 @@ function HeaderComponent(props: Props): JSX.Element {
                 </Button>
                 {user.isStaff ? (
                     <Button
+                        className={getButtonClassName('analytics')}
+                        type='link'
+                        value='analytics'
+                        href='/analytics'
+                        onClick={(event: React.MouseEvent): void => {
+                            event.preventDefault();
+                            history.push('/analytics');
+                        }}
+                    >
+                        Analytics
+                    </Button>
+                ) : null}
+                {user.isStaff ? (
+                    <Button
                         className={getButtonClassName('cloudstorages')}
                         type='link'
                         value='cloudstorages'

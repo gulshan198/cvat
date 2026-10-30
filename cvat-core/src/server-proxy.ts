@@ -17,7 +17,8 @@ import {
     SerializedRegister, JobsFilter, SerializedJob, SerializedGuide, SerializedAsset, SerializedAPISchema,
     SerializedInvitationData, SerializedCloudStorage, SerializedFramesMetaData, SerializedCollection,
     SerializedQualitySettingsData, APIQualitySettingsFilter, SerializedQualityConflictData, APIQualityConflictsFilter,
-    SerializedQualityReportData, APIQualityReportsFilter, APIAnalyticsEventsFilter, APIConsensusSettingsFilter,
+    SerializedQualityReportData, APIQualityReportsFilter, APIAnalyticsEventsFilter, APIAnalyticsSummaryFilter,
+    SerializedAnalyticsSummary, APIConsensusSettingsFilter,
     SerializedRequest, SerializedJobValidationLayout, SerializedTaskValidationLayout, SerializedConsensusSettingsData,
     SerializedApiToken, APIApiTokensFilter,
 } from './server-response-types';
@@ -2532,6 +2533,23 @@ async function getQualityConflicts(
     }
 }
 
+async function getAnalyticsSummary(
+    filter: APIAnalyticsSummaryFilter,
+): Promise<SerializedAnalyticsSummary> {
+    const { backendAPI } = config;
+    const params = {
+        ...filter,
+        ...enableOrganization(),
+    };
+
+    try {
+        const response = await Axios.get(`${backendAPI}/analytics/summary`, { params });
+        return response.data;
+    } catch (errorData) {
+        throw generateError(errorData);
+    }
+}
+
 async function getQualityReports(
     filter: APIQualityReportsFilter,
     aggregate?: boolean,
@@ -2724,6 +2742,7 @@ export default Object.freeze({
     }),
 
     analytics: Object.freeze({
+        summary: getAnalyticsSummary,
         quality: Object.freeze({
             reports: getQualityReports,
             conflicts: getQualityConflicts,

@@ -82,6 +82,7 @@ import IncorrectEmailConfirmationPage from './email-confirmation-pages/incorrect
 import CreateJobPage from './create-job-page/create-job-page';
 import QualityControlPage from './quality-control/quality-control-page';
 import AnalyticsReportPage from './analytics-report/analytics-report-page';
+import AnalyticsHubPage from './analytics-report/analytics-hub-page';
 import ConsensusManagementPage from './consensus-management-page/consensus-management-page';
 import InvitationWatcher from './invitation-watcher/invitation-watcher';
 import SelectOrganizationModal from './select-organization-modal/select-organization-modal';
@@ -536,6 +537,13 @@ class CVATApplication extends React.PureComponent<CVATAppProps & RouteComponentP
                                         <Route exact path='/tasks/:tid/jobs/:jid' component={AnnotationPageContainer} />
                                         <Route exact path='/tasks/:tid/jobs/:jid/analytics' component={AnalyticsReportPage} />
                                         <Route exact path='/jobs' component={JobsPageComponent} />
+                                        {user.isStaff ? (
+                                            <Route exact path='/analytics' component={AnalyticsHubPage} />
+                                        ) : (
+                                            <Route exact path='/analytics'>
+                                                <Redirect to='/tasks' />
+                                            </Route>
+                                        )}
                                         {user.isStaff ? (
                                             <Route exact path='/cloudstorages' component={CloudStoragesPageComponent} />
                                         ) : (

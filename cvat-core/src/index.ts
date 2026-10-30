@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: MIT
 
 import {
-    AnalyticsEventsFilter, QualityConflictsFilter, QualityReportsFilter,
+    AnalyticsEventsFilter, AnalyticsSummaryFilter, SerializedAnalyticsSummary,
+    QualityConflictsFilter, QualityReportsFilter,
     QualitySettingsFilter, ConsensusSettingsFilter, ApiTokensFilter,
 } from './server-response-types';
 import PluginRegistry from './plugins';
@@ -174,6 +175,7 @@ export default interface CVATCore {
         events: {
             export: (filter: AnalyticsEventsFilter) => Promise<string>;
         };
+        summary: (filter?: AnalyticsSummaryFilter) => Promise<SerializedAnalyticsSummary>;
     };
     frames: {
         getMeta: (type: 'task' | 'job', id: number) => Promise<FramesMetaData>;

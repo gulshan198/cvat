@@ -19,6 +19,7 @@ class EventsPermission(OpenPolicyAgentPermission, DownloadExportedExtension):
     class Scopes(StrEnum):
         SEND_EVENTS = "send:events"
         DUMP_EVENTS = "dump:events"
+        VIEW_ANALYTICS = "dump:events"  # reuse dump permissions for analytics summary
 
     @classmethod
     def create(
@@ -34,6 +35,11 @@ class EventsPermission(OpenPolicyAgentPermission, DownloadExportedExtension):
             permissions.append(self)
 
         return permissions
+
+    @classmethod
+    def create_for_analytics(cls, request: ExtendedRequest) -> "EventsPermission":
+        """Permission helper for analytics summary filtering."""
+        return cls.create_scope_list(request)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -64,6 +70,7 @@ class EventsPermission(OpenPolicyAgentPermission, DownloadExportedExtension):
                 ("create", "POST"): Scopes.SEND_EVENTS,
                 ("initiate_export", "POST"): Scopes.DUMP_EVENTS,
                 ("download_file", "GET"): DownloadExportedExtension.Scopes.DOWNLOAD_EXPORTED_FILE,
+                ("summary", "GET"): Scopes.VIEW_ANALYTICS,
                 # deprecated permissions:
                 ("list", "GET"): Scopes.DUMP_EVENTS,
             }[(view.action, request.method)]

@@ -28,3 +28,51 @@
     margin-left: $grid-unit-size * 2;
     padding: 0;
 }
+
+.cvat-analytics-hub-header {
+    margin-bottom: $grid-unit-size * 2;
+}
+
+.cvat-analytics-hub-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: $grid-unit-size;
+    justify-content: flex-end;
+}
+
+.cvat-analytics-project-filter,
+.cvat-analytics-user-filter {
+    min-width: $grid-unit-size * 22;
+}
+
+.cvat-analytics-dashboard {
+    margin-top: $grid-unit-size * 2;
+}
+
+.cvat-analytics-help {
+    display: block;
+    margin-bottom: $grid-unit-size * 2;
+}
+
+.cvat-analytics-legacy-note,
+.cvat-analytics-error {
+    margin-bottom: $grid-unit-size * 2;
+}
+
+.cvat-analytics-summary-cards,
+.cvat-analytics-pipeline-row {
+    margin-bottom: $grid-unit-size * 2;
+}
+
+.cvat-analytics-chart-card {
+    margin-bottom: $grid-unit-size * 2;
+}
+
+.cvat-analytics-chart {
+    height: 280px;
+}
+
+.cvat-analytics-drilldown {
+    margin-top: $grid-unit-size * 2;
+}

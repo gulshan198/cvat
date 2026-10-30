@@ -405,6 +405,70 @@ export interface APIAnalyticsEventsFilter {
 
 export type AnalyticsEventsFilter = CamelizedV2<APIAnalyticsEventsFilter>;
 
+export type APIAnalyticsSummaryFilter = Omit<APIAnalyticsEventsFilter, 'filename'>;
+
+export type AnalyticsSummaryFilter = CamelizedV2<APIAnalyticsSummaryFilter>;
+
+export interface SerializedAnalyticsLabelBreakdown {
+    label_id: number | null;
+    name: string;
+    images: number;
+}
+
+export interface SerializedAnalyticsDayImages {
+    date: string;
+    images: number;
+    by_label: SerializedAnalyticsLabelBreakdown[];
+}
+
+export interface SerializedAnalyticsAssigneeWorkload {
+    user_id: number;
+    username: string;
+    images_assigned: number;
+    images_done: number;
+    jobs_assigned: number;
+    jobs_done: number;
+}
+
+export interface SerializedAnalyticsObjectsDay {
+    date: string;
+    created: number;
+    deleted: number;
+}
+
+export interface SerializedAnalyticsWorkingTime {
+    user_id: number;
+    username: string;
+    ms: number;
+}
+
+export interface SerializedAnalyticsPipeline {
+    annotation: number;
+    validation: number;
+    acceptance: number;
+    completed: number;
+}
+
+export interface SerializedAnalyticsContributor {
+    user_id: number;
+    username: string;
+    images: number;
+}
+
+export interface SerializedAnalyticsSummary {
+    period: {
+        from: string;
+        to: string;
+    };
+    has_frame_label_data: boolean;
+    annotated_images_by_day: SerializedAnalyticsDayImages[];
+    assignee_workload: SerializedAnalyticsAssigneeWorkload[];
+    objects_by_day: SerializedAnalyticsObjectsDay[];
+    working_time_by_user: SerializedAnalyticsWorkingTime[];
+    pipeline: SerializedAnalyticsPipeline;
+    top_contributors: SerializedAnalyticsContributor[];
+}
+
 export interface SerializedInvitationData {
     created_date: string;
     key: string;

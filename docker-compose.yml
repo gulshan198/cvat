@@ -17,8 +17,17 @@ x-backend-env: &backend-env
   GUARDEX_GCS_MIRROR_CLOUD_STORAGE_ID: '${GUARDEX_GCS_MIRROR_CLOUD_STORAGE_ID:-1}'
   GUARDEX_GCS_MIRROR_PREFIX: '${GUARDEX_GCS_MIRROR_PREFIX:-raw_images}'
   CVAT_NUM_PROXIES: '${CVAT_NUM_PROXIES:-1}'
-  no_proxy: nuclio,opa,${no_proxy:-}
+  DJANGO_LOG_SERVER_HOST: vector
+  DJANGO_LOG_SERVER_PORT: 8282
+  no_proxy: clickhouse,vector,nuclio,opa,${no_proxy:-}
   SMOKESCREEN_OPTS: ${SMOKESCREEN_OPTS:-}
+
+x-clickhouse-env: &clickhouse-env
+  CLICKHOUSE_HOST: clickhouse
+  CLICKHOUSE_PORT: 8123
+  CLICKHOUSE_DB: cvat
+  CLICKHOUSE_USER: user
+  CLICKHOUSE_PASSWORD: user
 
 x-backend-deps: &backend-deps
   cvat_redis_inmem:
@@ -26,6 +35,8 @@ x-backend-deps: &backend-deps
   cvat_redis_ondisk:
     condition: service_started
   cvat_db:
+    condition: service_started
+  cvat_clickhouse:
     condition: service_started
 
 services:
@@ -93,12 +104,12 @@ services:
         condition:
           service_started
     environment:
-      <<: *backend-env
+      <<: [*backend-env, *clickhouse-env]
       DJANGO_MODWSGI_EXTRA_ARGS: ''
       ALLOWED_HOSTS: '*'
       ADAPTIVE_AUTO_ANNOTATION: 'false'
       NUMPROCS: 2
-      CVAT_ANALYTICS: '0'
+      CVAT_ANALYTICS: '1'
       CVAT_HOST: ${CVAT_HOST:-localhost}
       CVAT_BASE_URL: ${CVAT_BASE_URL:-}
       ONE_RUNNING_JOB_IN_QUEUE_PER_USER:
@@ -156,7 +167,7 @@ services:
     restart: always
     depends_on: *backend-deps
     environment:
-      <<: *backend-env
+      <<: [*backend-env, *clickhouse-env]
       NUMPROCS: 2
     command: run worker export
     volumes:
@@ -235,6 +246,43 @@ services:
       - --set=bundles.cvat.polling.min_delay_seconds=5
       - --set=bundles.cvat.polling.max_delay_seconds=15
 
+  cvat_clickhouse:
+    container_name: cvat_clickhouse
+    image: clickhouse/clickhouse-server:23.11-alpine
+    restart: always
+    environment:
+      <<: *clickhouse-env
+    networks:
+      cvat:
+        aliases:
+          - clickhouse
+    volumes:
+      - cvat_events_db:/var/lib/clickhouse/
+    # Optional local access for debugging:
+    # ports:
+    #   - 127.0.0.1:8123:8123
+
+  cvat_vector:
+    container_name: cvat_vector
+    image: timberio/vector:0.26.0-alpine
+    user: "1000:1000"
+    restart: always
+    depends_on:
+      - cvat_clickhouse
+    environment:
+      <<: *clickhouse-env
+    networks:
+      cvat:
+        aliases:
+          - vector
+    volumes:
+      - type: bind
+        source: ./components/analytics/vector/vector.toml
+        target: /etc/vector/vector.toml
+        read_only: true
+      - type: tmpfs
+        target: /vector-data-dir
+
 volumes:
   cvat_db:
   cvat_data:
@@ -242,6 +290,7 @@ volumes:
   cvat_logs:
   cvat_inmem_db:
   cvat_cache_db:
+  cvat_events_db:
 
 networks:
   cvat:

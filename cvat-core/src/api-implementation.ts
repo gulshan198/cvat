@@ -32,7 +32,7 @@ import Organization, { Invitation } from './organization';
 import Webhook from './webhook';
 import { ArgumentError } from './exceptions';
 import {
-    AnalyticsEventsFilter, QualityConflictsFilter,
+    AnalyticsEventsFilter, AnalyticsSummaryFilter, QualityConflictsFilter,
     SerializedAsset, ConsensusSettingsFilter, SerializedOrganization,
 } from './server-response-types';
 import QualityReport from './quality-report';
@@ -575,6 +575,22 @@ export default function implementAPI(cvat: CVATCore): CVATCore {
 
         const params = fieldsToSnakeCase(filter);
         return serverProxy.events.export(params);
+    });
+    implementationMixin(cvat.analytics.summary, async (
+        filter: AnalyticsSummaryFilter,
+    ): ReturnType<CVATCore['analytics']['summary']> => {
+        checkFilter(filter, {
+            orgId: isInteger,
+            userId: isInteger,
+            jobId: isInteger,
+            taskId: isInteger,
+            projectId: isInteger,
+            from: isString,
+            to: isString,
+        });
+
+        const params = fieldsToSnakeCase(filter);
+        return serverProxy.analytics.summary(params);
     });
     implementationMixin(cvat.frames.getMeta, async (type: 'job' | 'task', id: number) => {
         const result = await getFramesMeta(type, id);

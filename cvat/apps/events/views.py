@@ -12,6 +12,7 @@ from rest_framework.response import Response
 from cvat.apps.engine.location import Location
 from cvat.apps.engine.log import vlogger
 from cvat.apps.engine.types import ExtendedRequest
+from cvat.apps.events.analytics import build_analytics_summary
 from cvat.apps.events.export import EventsExporter
 from cvat.apps.events.permissions import EventsPermission
 from cvat.apps.events.serializers import ClientEventsSerializer
@@ -219,3 +220,32 @@ class EventsViewSet(viewsets.ViewSet):
 
         downloader = EventsExporter(request=request).get_downloader()
         return downloader.download_file()
+
+
+class AnalyticsViewSet(viewsets.ViewSet):
+    serializer_class = None
+    iam_permission_class = EventsPermission
+
+    @extend_schema(
+        summary="Get analytics summary metrics",
+        methods=["GET"],
+        description=(
+            "Returns aggregated annotation productivity metrics for the selected period. "
+            "Requires ClickHouse analytics database."
+        ),
+        parameters=[
+            *api_filter_parameters,
+            *ORGANIZATION_OPEN_API_PARAMETERS,
+        ],
+        responses={
+            "200": OpenApiResponse(description="Analytics summary"),
+            "400": OpenApiResponse(description="Invalid filters or analytics DB unavailable"),
+        },
+    )
+    @action(detail=False, methods=["GET"], url_path="summary")
+    def summary(self, request: ExtendedRequest):
+        self.check_permissions(request)
+        perm = EventsPermission.create_for_analytics(request)
+        filtered_params = perm.filter(request.query_params.copy())
+        data = build_analytics_summary(filtered_params)
+        return Response(data, status=status.HTTP_200_OK)

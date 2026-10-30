@@ -2,23 +2,72 @@
 //
 // SPDX-License-Identifier: MIT
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useSelector } from 'react-redux';
 
-import config from 'config';
 import { Project, Task, Job } from 'cvat-core-wrapper';
 import { CombinedState } from 'reducers';
-import PaidFeaturePlaceholder from 'components/paid-feature-placeholder/paid-feature-placeholder';
 import { TimePeriod } from '.';
+import AnalyticsDashboard, { AnalyticsDashboardFilter } from './analytics-dashboard';
 
 interface Props {
-    resource: Project | Task | Job;
+    resource?: Project | Task | Job | null;
     timePeriod: TimePeriod | null;
+    filterOverrides?: AnalyticsDashboardFilter;
+    showProjectLinks?: boolean;
 }
 
-function AnalyticsReportContent(): JSX.Element {
+function buildResourceFilter(
+    resource: Project | Task | Job | null | undefined,
+    timePeriod: TimePeriod | null,
+    filterOverrides?: AnalyticsDashboardFilter,
+): AnalyticsDashboardFilter {
+    const filter: AnalyticsDashboardFilter = { ...(filterOverrides || {}) };
+
+    if (timePeriod) {
+        filter.from = timePeriod.startDate;
+        filter.to = timePeriod.endDate;
+    }
+
+    if (resource) {
+        if (resource instanceof Project) {
+            filter.projectId = resource.id;
+        } else if (resource instanceof Task) {
+            filter.taskId = resource.id;
+        } else if (resource instanceof Job) {
+            filter.jobId = resource.id;
+        }
+    }
+
+    return filter;
+}
+
+function AnalyticsReportContent(props: Readonly<Props>): JSX.Element {
+    const {
+        resource, timePeriod, filterOverrides, showProjectLinks,
+    } = props;
+
+    const filter = useMemo(
+        () => buildResourceFilter(resource, timePeriod, filterOverrides),
+        [
+            resource,
+            timePeriod?.startDate,
+            timePeriod?.endDate,
+            filterOverrides?.from,
+            filterOverrides?.to,
+            filterOverrides?.projectId,
+            filterOverrides?.taskId,
+            filterOverrides?.jobId,
+            filterOverrides?.userId,
+            filterOverrides?.orgId,
+        ],
+    );
+
     return (
-        <PaidFeaturePlaceholder featureDescription={config.PAID_PLACEHOLDER_CONFIG.features.analyticsReport} />
+        <AnalyticsDashboard
+            filter={filter}
+            showProjectLinks={showProjectLinks}
+        />
     );
 }
 
@@ -32,7 +81,7 @@ function AnalyticsReportContentWrap(props: Readonly<Props>): JSX.Element {
         return <Component {...props} />;
     }
 
-    return <AnalyticsReportContent />;
+    return <AnalyticsReportContent {...props} />;
 }
 
 export default React.memo(AnalyticsReportContentWrap);

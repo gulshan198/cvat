@@ -8,6 +8,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import notification from 'antd/lib/notification';
 import { Row, Col } from 'antd/lib/grid';
+import dayjs from 'utils/dayjs-wrapper';
 
 import {
     Project, Task, Job, getCore, MembershipRole, AnalyticsEventsFilter,
@@ -23,10 +24,19 @@ import { TimePeriod } from '.';
 
 const core = getCore();
 
+function defaultTimePeriod(): TimePeriod {
+    const end = dayjs.utc().endOf('day');
+    const start = end.subtract(6, 'day').startOf('day');
+    return {
+        startDate: start.toISOString(),
+        endDate: end.toISOString(),
+    };
+}
+
 function AnalyticsReportPage(): JSX.Element {
     const requestedInstanceType: InstanceType = useInstanceType();
     const requestedInstanceId = useInstanceId(requestedInstanceType);
-    const [timePeriod, setTimePeriod] = useState<TimePeriod | null>(null);
+    const [timePeriod, setTimePeriod] = useState<TimePeriod | null>(defaultTimePeriod);
     const [exporting, setExporting] = useState(false);
     const [resource, setResource] = useState<Project | Task | Job | null>(null);
     const [fetching, setFetching] = useState(true);
@@ -146,6 +156,7 @@ function AnalyticsReportPage(): JSX.Element {
                                 exporting={exporting}
                                 fetching={fetching}
                                 resource={resource}
+                                timePeriod={timePeriod}
                                 onExportEvents={onExportEvents}
                                 onUpdateTimePeriod={(from: Date | null, to: Date | null) => {
                                     function localToUTC(date: Date): string {
@@ -160,7 +171,7 @@ function AnalyticsReportPage(): JSX.Element {
                                     setTimePeriod((from && to) ? {
                                         startDate: localToUTC(from),
                                         endDate: localToUTC(to),
-                                    } : null);
+                                    } : defaultTimePeriod());
                                 }}
                             />
                         )}
