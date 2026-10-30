@@ -1606,14 +1606,12 @@ class JobWriteSerializer(WriteOnceMixin, serializers.ModelSerializer):
         ):
             instance.update_assignee(assignee_id)
 
-        instance = super().update(instance, validated_data)
-
         request = self.context.get("request")
         user = getattr(request, "user", None) if request is not None else None
         if user is not None and getattr(user, "is_authenticated", False):
-            instance.updated_by = user
-            instance.save(update_fields=["updated_by"])
+            validated_data["updated_by"] = user
 
+        instance = super().update(instance, validated_data)
         return instance
 
 
