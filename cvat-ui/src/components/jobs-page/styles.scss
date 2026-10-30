@@ -49,16 +49,23 @@
         display: flex;
         flex-direction: column;
         cursor: pointer;
+        overflow: hidden;
 
         .ant-card-cover {
-            flex: 1;
-            height: 0;
+            position: relative;
+            flex: 1 1 auto;
+            // Keep a real preview band so Job ID / type / dimension badges
+            // never sit on top of the card body fields.
+            min-height: $grid-unit-size * 11;
+            height: auto;
             margin: 0;
             pointer-events: none;
+            overflow: hidden;
         }
 
         .ant-card-body {
-            padding: $grid-unit-size * 1.5 $grid-unit-size;
+            flex: 0 0 auto;
+            padding: $grid-unit-size * 1.5 $grid-unit-size * 4 $grid-unit-size * 1.5 $grid-unit-size;
             pointer-events: none;
 
             .cvat-job-card-more-button {
@@ -181,9 +188,13 @@
 
     .cvat-job-card-more-button {
         position: absolute;
-        bottom: $grid-unit-size * 2;
+        // Align with the last body row, not over the preview overlays.
+        bottom: $grid-unit-size * 1.5;
         right: $grid-unit-size;
+        z-index: 1;
         font-size: 16px;
+        line-height: 1;
+        padding: $grid-unit-size * 0.5;
     }
 }
 
@@ -257,5 +268,6 @@
 }
 
 .cvat-job-card-updated {
-    margin-top: $grid-unit-size;
+    // gap on .cvat-job-card-body already spaces rows — no extra margin
+    padding-right: $grid-unit-size;
 }

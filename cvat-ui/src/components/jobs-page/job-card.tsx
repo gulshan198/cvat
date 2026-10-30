@@ -22,8 +22,10 @@ const useCardHeight = useCardHeightHOC({
     containerClassName: 'cvat-jobs-page',
     siblingClassNames: ['cvat-jobs-page-pagination', 'cvat-jobs-page-top-bar'],
     paddings: 80,
-    minHeight: 200,
-    numberOfRows: 3,
+    // Body now has stage/progress/assignee/updated — keep cards tall enough
+    // so the preview cover (and its Job ID badge) does not collapse onto fields.
+    minHeight: 280,
+    numberOfRows: 2,
 });
 
 interface Props {

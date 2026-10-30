@@ -3,7 +3,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import jsonLogic from 'json-logic-js';
 import _ from 'lodash';
@@ -18,9 +18,8 @@ import { PlusOutlined } from '@ant-design/icons';
 import { Task, Job } from 'cvat-core-wrapper';
 import JobItem from 'components/job-item/job-item';
 import {
-    SortingComponent, ResourceFilterHOC, defaultVisibility, updateHistoryFromQuery, ResourceSelectionInfo,
+    SortingComponent, ResourceFilterHOC, defaultVisibility, ResourceSelectionInfo,
 } from 'components/resource-sorting-filtering';
-import { useResourceQuery } from 'utils/hooks';
 import BulkWrapper from 'components/bulk-wrapper';
 import { selectionActions } from 'actions/selection-actions';
 import JobsCSVExportButton from 'components/jobs-page/jobs-csv-export-button';
@@ -87,27 +86,25 @@ function JobListComponent(props: Readonly<Props>): JSX.Element {
         search: null,
         filter: '{"and":[{"!":{"var":"parent_job_id"}}]}',
     };
-    const query = useResourceQuery<JobsQuery>(defaultQuery, defaultQuery);
+    // Keep sort/filter/page in component state — do not put them in the URL.
+    const [query, setQuery] = useState<JobsQuery>(defaultQuery);
+
+    // Strip any legacy ?filter=&sort=&page= query from the task URL once.
+    useEffect(() => {
+        if (history.location.search) {
+            history.replace({ pathname: history.location.pathname, search: '', hash: history.location.hash });
+        }
+        // Only on mount / when task route identity changes
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [taskId]);
 
     const filteredJobs = filterJobs(jobs, query);
     const jobIds = filteredJobs.map((job) => job.id);
     const viewedJobs = setUpJobsList(filteredJobs, query.page, query.pageSize);
 
-    const setQuery = useCallback((nextQuery: JobsQuery) => {
-        const nextSearch = updateHistoryFromQuery(nextQuery);
-
-        if (nextSearch === (history.location.search || '')) return;
-
-        if (query.filter === nextQuery.filter && query.sort === nextQuery.sort) {
-            history.replace({ search: nextSearch });
-        } else {
-            history.push({ ...history.location, search: nextSearch });
-        }
-    }, [history.location, query]);
-
     const onCreateJob = useCallback(() => {
         history.push(`/tasks/${taskId}/jobs/create`);
-    }, []);
+    }, [history, taskId]);
 
     const dispatch = useDispatch();
     const selectedCount = useSelector((state: CombinedState) => state.jobs.selected.length);
