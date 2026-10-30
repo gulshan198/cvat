@@ -145,6 +145,7 @@ export interface SerializedTask {
 
 export interface SerializedJob {
     assignee: SerializedUser | null;
+    updated_by?: SerializedUser | null;
     bug_tracker: string;
     data_chunk_size: number | null;
     data_compressed_chunk_type: ChunkType

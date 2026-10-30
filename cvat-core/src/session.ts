@@ -571,6 +571,7 @@ export class Job extends Session {
     #data: {
         id?: number;
         assignee: User | null;
+        updated_by: User | null;
         stage?: JobStage;
         state?: JobState;
         type?: JobType;
@@ -605,6 +606,7 @@ export class Job extends Session {
         this.#data = {
             id: undefined,
             assignee: null,
+            updated_by: null,
             stage: undefined,
             state: undefined,
             type: undefined,
@@ -679,6 +681,14 @@ export class Job extends Session {
             }
         }
 
+        if (data.updated_by?.id !== this.#data.updated_by?.id) {
+            if (data.updated_by) {
+                this.#data.updated_by = new User(data.updated_by);
+            } else if (data.updated_by === null) {
+                this.#data.updated_by = null;
+            }
+        }
+
         if (
             !this.#data.source_storage ||
             this.#data.source_storage.location !== data.source_storage?.location ||
@@ -714,6 +724,10 @@ export class Job extends Session {
 
     public get assignee(): User | null {
         return this.#data.assignee;
+    }
+
+    public get updatedBy(): User | null {
+        return this.#data.updated_by;
     }
 
     public get stage(): JobStage {
@@ -1021,6 +1035,7 @@ export class Task extends Session {
                     url: job.url,
                     id: job.id,
                     assignee: job.assignee,
+                    updated_by: job.updated_by,
                     state: job.state,
                     stage: job.stage,
                     type: job.type,
