@@ -1359,6 +1359,13 @@ class Job(TimestampedModel, AssignableModel, FileSystemRelatedModel):
         related_name="child_jobs",
         related_query_name="child_job",
     )
+    updated_by = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+    )
 
     labeledimage_set: models.manager.RelatedManager[LabeledImage]
     labeledshape_set: models.manager.RelatedManager[LabeledShape]
