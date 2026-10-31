@@ -482,6 +482,7 @@ export interface SerializedAnalyticsInventory {
         tracks: number;
         images: number;
     };
+    scoped?: boolean;
 }
 
 export interface SerializedAnalyticsSummary {

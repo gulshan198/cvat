@@ -467,14 +467,23 @@ def _pipeline_snapshot(filters: dict[str, Any]) -> dict[str, int]:
 
 
 def _annotation_inventory(filters: dict[str, Any]) -> dict[str, Any]:
-    """Current annotation inventory (Premium Annotations tab), not time-filtered."""
+    """Current annotation inventory (Premium Annotations tab), not time-filtered.
+
+    Requires a project/task/job scope. Hub-wide inventory across every job is
+    skipped (too heavy and usually empty in the UI).
+    """
+    empty = {
+        "detections": [],
+        "tracking": [],
+        "totals": {"shapes": 0, "tags": 0, "tracks": 0, "images": 0},
+        "scoped": False,
+    }
+    if not any(filters.get(key) is not None for key in ("project_id", "task_id", "job_id")):
+        return empty
+
     job_ids = list(_job_queryset(filters).values_list("id", flat=True))
     if not job_ids:
-        return {
-            "detections": [],
-            "tracking": [],
-            "totals": {"shapes": 0, "tags": 0, "tracks": 0, "images": 0},
-        }
+        return {**empty, "scoped": True}
 
     detections: dict[int, dict[str, Any]] = {}
 
@@ -578,6 +587,7 @@ def _annotation_inventory(filters: dict[str, Any]) -> dict[str, Any]:
             "tracks": sum(row["tracks"] for row in tracking_list),
             "images": images_total,
         },
+        "scoped": True,
     }
 
 

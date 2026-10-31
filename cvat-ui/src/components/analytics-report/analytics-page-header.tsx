@@ -9,11 +9,11 @@ import DatePicker from 'antd/lib/date-picker';
 import { Row, Col } from 'antd/lib/grid';
 import { DownloadOutlined } from '@ant-design/icons';
 import { Dayjs } from 'dayjs';
-import dayjs from 'utils/dayjs-wrapper';
 
 import { Project, Task, Job } from 'cvat-core-wrapper';
 import ResourceLink from 'components/common/resource-link';
 import { TimePeriod } from '.';
+import { toPickerDayjs } from './date-range';
 
 interface Props {
     onExportEvents(): void;
@@ -38,7 +38,7 @@ function AnaylyticsPageHeader(props: Props): JSX.Element {
         if (!timePeriod?.startDate || !timePeriod?.endDate) {
             return null;
         }
-        return [dayjs.utc(timePeriod.startDate), dayjs.utc(timePeriod.endDate)];
+        return [toPickerDayjs(timePeriod.startDate), toPickerDayjs(timePeriod.endDate)];
     }, [timePeriod?.startDate, timePeriod?.endDate]);
 
     return (
@@ -52,7 +52,7 @@ function AnaylyticsPageHeader(props: Props): JSX.Element {
             <Col>
                 <DatePicker.RangePicker
                     value={rangeValue}
-                    placeholder={['UTC start day', 'UTC end day']}
+                    placeholder={['IST start day', 'IST end day']}
                     className='cvat-analytics-date-picker'
                     allowEmpty={[false, false]}
                     onChange={(value) => {

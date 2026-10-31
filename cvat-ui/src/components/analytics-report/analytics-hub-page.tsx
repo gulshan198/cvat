@@ -14,8 +14,6 @@ import Button from 'antd/lib/button';
 import notification from 'antd/lib/notification';
 import { DownloadOutlined } from '@ant-design/icons';
 import { Dayjs } from 'dayjs';
-import dayjs from 'utils/dayjs-wrapper';
-
 import {
     getCore, MembershipRole, AnalyticsEventsFilter, User, Project,
 } from 'cvat-core-wrapper';
@@ -24,16 +22,18 @@ import { shallowEqual } from 'utils/redux';
 import GoBackButton from 'components/common/go-back-button';
 import AnalyticsDashboard from './analytics-dashboard';
 import { TimePeriod } from '.';
-import { defaultLast7DaysUtc, toUtcDayRange } from './date-range';
+import {
+    defaultLast7DaysIst, toIstDayRange, toPickerDayjs,
+} from './date-range';
 
 const core = getCore();
 
 function AnalyticsHubPage(): JSX.Element {
-    const initialPeriod = defaultLast7DaysUtc();
+    const initialPeriod = defaultLast7DaysIst();
     const [timePeriod, setTimePeriod] = useState<TimePeriod | null>(initialPeriod);
     const [rangeValue, setRangeValue] = useState<[Dayjs, Dayjs] | null>([
-        dayjs.utc(initialPeriod.startDate),
-        dayjs.utc(initialPeriod.endDate),
+        toPickerDayjs(initialPeriod.startDate),
+        toPickerDayjs(initialPeriod.endDate),
     ]);
     const [projects, setProjects] = useState<Project[]>([]);
     const [users, setUsers] = useState<User[]>([]);
@@ -176,25 +176,25 @@ function AnalyticsHubPage(): JSX.Element {
                                 />
                                 <DatePicker.RangePicker
                                     value={rangeValue}
-                                    placeholder={['UTC start date', 'UTC end date']}
+                                    placeholder={['IST start date', 'IST end date']}
                                     className='cvat-analytics-date-picker'
                                     onChange={(value) => {
                                         if (value) {
                                             const [from, to] = value;
                                             if (from && to) {
-                                                const period = toUtcDayRange(from.toDate(), to.toDate());
+                                                const period = toIstDayRange(from.toDate(), to.toDate());
                                                 setRangeValue([
-                                                    dayjs.utc(period.startDate),
-                                                    dayjs.utc(period.endDate),
+                                                    toPickerDayjs(period.startDate),
+                                                    toPickerDayjs(period.endDate),
                                                 ]);
                                                 setTimePeriod(period);
                                                 return;
                                             }
                                         }
-                                        const fallback = defaultLast7DaysUtc();
+                                        const fallback = defaultLast7DaysIst();
                                         setRangeValue([
-                                            dayjs.utc(fallback.startDate),
-                                            dayjs.utc(fallback.endDate),
+                                            toPickerDayjs(fallback.startDate),
+                                            toPickerDayjs(fallback.endDate),
                                         ]);
                                         setTimePeriod(fallback);
                                     }}

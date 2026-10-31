@@ -19,14 +19,14 @@ import CVATLoadingSpinner from 'components/common/loading-spinner';
 import AnalyticsReportContent from './analytics-report-content';
 import AnalyticsPageHeader from './analytics-page-header';
 import { TimePeriod } from '.';
-import { defaultLast7DaysUtc, toUtcDayRange } from './date-range';
+import { defaultLast7DaysIst, toIstDayRange } from './date-range';
 
 const core = getCore();
 
 function AnalyticsReportPage(): JSX.Element {
     const requestedInstanceType: InstanceType = useInstanceType();
     const requestedInstanceId = useInstanceId(requestedInstanceType);
-    const [timePeriod, setTimePeriod] = useState<TimePeriod | null>(defaultLast7DaysUtc);
+    const [timePeriod, setTimePeriod] = useState<TimePeriod | null>(defaultLast7DaysIst);
     const [exporting, setExporting] = useState(false);
     const [resource, setResource] = useState<Project | Task | Job | null>(null);
     const [fetching, setFetching] = useState(true);
@@ -149,9 +149,9 @@ function AnalyticsReportPage(): JSX.Element {
                                 timePeriod={timePeriod}
                                 onExportEvents={onExportEvents}
                                 onUpdateTimePeriod={(from: Date | null, to: Date | null) => {
-                                    // Expand to full UTC days so a single-day pick is 00:00–23:59, not 00:00–00:00
+                                    // Full IST days (00:00–23:59 IST), sent to API as ISO/UTC
                                     setTimePeriod(
-                                        (from && to) ? toUtcDayRange(from, to) : defaultLast7DaysUtc(),
+                                        (from && to) ? toIstDayRange(from, to) : defaultLast7DaysIst(),
                                     );
                                 }}
                             />
