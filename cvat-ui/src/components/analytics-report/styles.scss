@@ -9,15 +9,26 @@
 }
 
 .cvat-analytics-page, .cvat-analytics-wrapper {
-    height: 100%;
+    height: auto;
+    min-height: 100%;
 }
 
 .cvat-analytics-inner {
     @include cvat-management-page-inner;
+    // Dashboard is tall — grow the white panel with all charts instead of
+    // locking to viewport height (that left lower charts on the gray page).
+    height: auto !important;
+    min-height: calc(100vh - #{$grid-unit-size * 16});
+    overflow: visible;
+    padding-top: $grid-unit-size * 3;
+    padding-bottom: $grid-unit-size * 4;
 }
 
 .cvat-analytics-inner-wrapper {
     @include cvat-management-page-inner-wrapper;
+    height: auto !important;
+    min-height: auto;
+    margin-bottom: $grid-unit-size * 4;
 }
 
 .cvat-analytics-header {
@@ -144,9 +155,35 @@
     }
 }
 
+.cvat-analytics-chart-grid {
+    display: grid;
+    gap: $grid-unit-size * 2.5;
+    margin-bottom: $grid-unit-size * 2.5;
+}
+
+.cvat-analytics-chart-grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    @media (max-width: 992px) {
+        grid-template-columns: 1fr;
+    }
+}
+
+.cvat-analytics-chart-grid-wide {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+
+    @media (max-width: 992px) {
+        grid-template-columns: 1fr;
+    }
+}
+
 .cvat-analytics-chart-card {
-    margin-bottom: $grid-unit-size * 2;
+    margin-bottom: 0 !important;
     height: 100%;
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 8px;
+    box-shadow: none;
 }
 
 .cvat-analytics-section-title {
@@ -178,6 +215,14 @@
 
 .cvat-analytics-tabs {
     margin-top: $grid-unit-size;
+
+    // Let tab panels expand with dashboard content (no clipped white band).
+    .ant-tabs-content-holder,
+    .ant-tabs-content,
+    .ant-tabs-tabpane {
+        height: auto !important;
+        overflow: visible;
+    }
 }
 
 .cvat-analytics-inventory-table {

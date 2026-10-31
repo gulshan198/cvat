@@ -4,7 +4,6 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Row, Col } from 'antd/lib/grid';
 import Alert from 'antd/lib/alert';
 import Card from 'antd/lib/card';
 import Empty from 'antd/lib/empty';
@@ -582,167 +581,153 @@ function AnalyticsDashboard(props: Readonly<Props>): JSX.Element {
                                     />
                                 ) : (
                                     <>
-                                        <Row gutter={[16, 16]}>
-                                            <Col xs={24} lg={16}>
-                                                <ChartSection
-                                                    title='Annotated images by day'
-                                                    meaning={
-                                                        'Distinct images/frames with new annotations each day. '
-                                                        + 'Hover a bar for label breakdown.'
-                                                    }
-                                                >
-                                                    <div className='cvat-analytics-chart'>
-                                                        {annotatedChart && totalAnnotated > 0 ? (
-                                                            <Bar data={annotatedChart.data} options={annotatedChart.options} />
-                                                        ) : (
-                                                            <Empty
-                                                                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                                                                description='No annotation-create events in this period'
-                                                            />
-                                                        )}
-                                                    </div>
-                                                </ChartSection>
-                                            </Col>
-                                            <Col xs={24} lg={8}>
-                                                <ChartSection
-                                                    title='Label distribution'
-                                                    meaning={
-                                                        'Share of annotated frames by label in this period '
-                                                        + '(Premium-style label diagram).'
-                                                    }
-                                                >
-                                                    <div className='cvat-analytics-chart'>
-                                                        {labelDistributionChart ? (
-                                                            <Doughnut
-                                                                data={labelDistributionChart.data}
-                                                                options={labelDistributionChart.options}
-                                                            />
-                                                        ) : (
-                                                            <Empty
-                                                                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                                                                description='No label breakdown yet'
-                                                            />
-                                                        )}
-                                                    </div>
-                                                </ChartSection>
-                                            </Col>
-                                        </Row>
+                                        <div className='cvat-analytics-chart-grid cvat-analytics-chart-grid-wide'>
+                                            <ChartSection
+                                                title='Annotated images by day'
+                                                meaning={
+                                                    'Distinct images/frames with new annotations each day. '
+                                                    + 'Hover a bar for label breakdown.'
+                                                }
+                                            >
+                                                <div className='cvat-analytics-chart'>
+                                                    {annotatedChart && totalAnnotated > 0 ? (
+                                                        <Bar data={annotatedChart.data} options={annotatedChart.options} />
+                                                    ) : (
+                                                        <Empty
+                                                            image={Empty.PRESENTED_IMAGE_SIMPLE}
+                                                            description='No annotation-create events in this period'
+                                                        />
+                                                    )}
+                                                </div>
+                                            </ChartSection>
+                                            <ChartSection
+                                                title='Label distribution'
+                                                meaning={
+                                                    'Share of annotated frames by label in this period '
+                                                    + '(Premium-style label diagram).'
+                                                }
+                                            >
+                                                <div className='cvat-analytics-chart'>
+                                                    {labelDistributionChart ? (
+                                                        <Doughnut
+                                                            data={labelDistributionChart.data}
+                                                            options={labelDistributionChart.options}
+                                                        />
+                                                    ) : (
+                                                        <Empty
+                                                            image={Empty.PRESENTED_IMAGE_SIMPLE}
+                                                            description='No label breakdown yet'
+                                                        />
+                                                    )}
+                                                </div>
+                                            </ChartSection>
+                                        </div>
 
-                                        <Row gutter={[16, 16]}>
-                                            <Col xs={24} lg={12}>
-                                                <ChartSection
-                                                    title='Objects created vs deleted'
-                                                    meaning={
-                                                        'Premium object statistics: shapes/tags/tracks created vs deleted each day.'
-                                                    }
-                                                >
-                                                    <div className='cvat-analytics-chart'>
-                                                        {objectsChart && summary.objects_by_day.length ? (
-                                                            <Bar data={objectsChart.data} options={objectsChart.options} />
-                                                        ) : (
-                                                            <Empty
-                                                                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                                                                description='No create/delete object events'
-                                                            />
-                                                        )}
-                                                    </div>
-                                                </ChartSection>
-                                            </Col>
-                                            <Col xs={24} lg={12}>
-                                                <ChartSection
-                                                    title='Annotation speed by day'
-                                                    meaning='Net objects (created − deleted) per day.'
-                                                >
-                                                    <div className='cvat-analytics-chart'>
-                                                        {annotationSpeedChart ? (
-                                                            <Bar
-                                                                data={annotationSpeedChart.data}
-                                                                options={annotationSpeedChart.options}
-                                                            />
-                                                        ) : (
-                                                            <Empty
-                                                                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                                                                description='No object activity'
-                                                            />
-                                                        )}
-                                                    </div>
-                                                </ChartSection>
-                                            </Col>
-                                        </Row>
+                                        <div className='cvat-analytics-chart-grid cvat-analytics-chart-grid-2'>
+                                            <ChartSection
+                                                title='Objects created vs deleted'
+                                                meaning={
+                                                    'Premium object statistics: shapes/tags/tracks created vs deleted each day.'
+                                                }
+                                            >
+                                                <div className='cvat-analytics-chart'>
+                                                    {objectsChart && summary.objects_by_day.length ? (
+                                                        <Bar data={objectsChart.data} options={objectsChart.options} />
+                                                    ) : (
+                                                        <Empty
+                                                            image={Empty.PRESENTED_IMAGE_SIMPLE}
+                                                            description='No create/delete object events'
+                                                        />
+                                                    )}
+                                                </div>
+                                            </ChartSection>
+                                            <ChartSection
+                                                title='Annotation speed by day'
+                                                meaning='Net objects (created − deleted) per day.'
+                                            >
+                                                <div className='cvat-analytics-chart'>
+                                                    {annotationSpeedChart ? (
+                                                        <Bar
+                                                            data={annotationSpeedChart.data}
+                                                            options={annotationSpeedChart.options}
+                                                        />
+                                                    ) : (
+                                                        <Empty
+                                                            image={Empty.PRESENTED_IMAGE_SIMPLE}
+                                                            description='No object activity'
+                                                        />
+                                                    )}
+                                                </div>
+                                            </ChartSection>
+                                        </div>
 
-                                        <Row gutter={[16, 16]}>
-                                            <Col xs={24} lg={12}>
-                                                <ChartSection
-                                                    title='Assignee: assigned vs annotated'
-                                                    meaning={
-                                                        'Per person: yellow = frames assigned; green = frames annotated (done).'
-                                                    }
-                                                >
-                                                    <div className='cvat-analytics-chart'>
-                                                        {assigneeChart ? (
-                                                            <Bar data={assigneeChart.data} options={assigneeChart.options} />
-                                                        ) : (
-                                                            <Empty
-                                                                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                                                                description='No assignment or annotation activity'
-                                                            />
-                                                        )}
-                                                    </div>
-                                                </ChartSection>
-                                            </Col>
-                                            <Col xs={24} lg={12}>
-                                                <ChartSection
-                                                    title='Working time by user'
-                                                    meaning='Active annotation UI time per user (Premium working-time metric).'
-                                                >
-                                                    <div className='cvat-analytics-chart'>
-                                                        {workingTimeChart && summary.working_time_by_user.length ? (
-                                                            <Bar
-                                                                data={workingTimeChart.data}
-                                                                options={workingTimeChart.options}
-                                                            />
-                                                        ) : (
-                                                            <Empty
-                                                                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                                                                description='No working-time events'
-                                                            />
-                                                        )}
-                                                    </div>
-                                                </ChartSection>
-                                            </Col>
-                                        </Row>
+                                        <div className='cvat-analytics-chart-grid cvat-analytics-chart-grid-2'>
+                                            <ChartSection
+                                                title='Assignee: assigned vs annotated'
+                                                meaning={
+                                                    'Per person: yellow = frames assigned; green = frames annotated (done).'
+                                                }
+                                            >
+                                                <div className='cvat-analytics-chart'>
+                                                    {assigneeChart ? (
+                                                        <Bar data={assigneeChart.data} options={assigneeChart.options} />
+                                                    ) : (
+                                                        <Empty
+                                                            image={Empty.PRESENTED_IMAGE_SIMPLE}
+                                                            description='No assignment or annotation activity'
+                                                        />
+                                                    )}
+                                                </div>
+                                            </ChartSection>
+                                            <ChartSection
+                                                title='Working time by user'
+                                                meaning='Active annotation UI time per user (Premium working-time metric).'
+                                            >
+                                                <div className='cvat-analytics-chart'>
+                                                    {workingTimeChart && summary.working_time_by_user.length ? (
+                                                        <Bar
+                                                            data={workingTimeChart.data}
+                                                            options={workingTimeChart.options}
+                                                        />
+                                                    ) : (
+                                                        <Empty
+                                                            image={Empty.PRESENTED_IMAGE_SIMPLE}
+                                                            description='No working-time events'
+                                                        />
+                                                    )}
+                                                </div>
+                                            </ChartSection>
+                                        </div>
 
-                                        <Row gutter={[16, 16]}>
-                                            <Col span={24}>
-                                                <ChartSection
-                                                    title='Top contributors'
-                                                    meaning='Users ranked by annotated images in the period.'
-                                                >
-                                                    <Table
-                                                        size='small'
-                                                        rowKey={(row) => String(row.user_id)}
-                                                        pagination={false}
-                                                        locale={{ emptyText: 'No contributors in this period' }}
-                                                        dataSource={summary.top_contributors}
-                                                        columns={[
-                                                            {
-                                                                title: 'User',
-                                                                dataIndex: 'username',
-                                                                key: 'username',
-                                                                render: (username: string, row) => (
-                                                                    username || `user#${row.user_id}`
-                                                                ),
-                                                            },
-                                                            {
-                                                                title: 'Annotated images',
-                                                                dataIndex: 'images',
-                                                                key: 'images',
-                                                            },
-                                                        ]}
-                                                    />
-                                                </ChartSection>
-                                            </Col>
-                                        </Row>
+                                        <div className='cvat-analytics-chart-grid'>
+                                            <ChartSection
+                                                title='Top contributors'
+                                                meaning='Users ranked by annotated images in the period.'
+                                            >
+                                                <Table
+                                                    size='small'
+                                                    rowKey={(row) => String(row.user_id)}
+                                                    pagination={false}
+                                                    locale={{ emptyText: 'No contributors in this period' }}
+                                                    dataSource={summary.top_contributors}
+                                                    columns={[
+                                                        {
+                                                            title: 'User',
+                                                            dataIndex: 'username',
+                                                            key: 'username',
+                                                            render: (username: string, row) => (
+                                                                username || `user#${row.user_id}`
+                                                            ),
+                                                        },
+                                                        {
+                                                            title: 'Annotated images',
+                                                            dataIndex: 'images',
+                                                            key: 'images',
+                                                        },
+                                                    ]}
+                                                />
+                                            </ChartSection>
+                                        </div>
                                     </>
                                 )}
                             </>
@@ -879,64 +864,60 @@ function AnalyticsDashboard(props: Readonly<Props>): JSX.Element {
                                     />
                                 </div>
 
-                                <Row gutter={[16, 16]}>
-                                    <Col xs={24} lg={12}>
-                                        <ChartSection
-                                            title='Daily object activity'
-                                            meaning='Created vs deleted objects each day in the period.'
-                                        >
-                                            <Table
-                                                size='small'
-                                                pagination={false}
-                                                locale={{ emptyText: 'No object events in this period' }}
-                                                rowKey={(row) => row.date}
-                                                dataSource={summary.objects_by_day}
-                                                columns={[
-                                                    { title: 'Date', dataIndex: 'date', key: 'date' },
-                                                    { title: 'Created', dataIndex: 'created', key: 'created' },
-                                                    { title: 'Deleted', dataIndex: 'deleted', key: 'deleted' },
-                                                    {
-                                                        title: 'Net',
-                                                        key: 'net',
-                                                        render: (_: unknown, row: { created: number; deleted: number }) => (
-                                                            row.created - row.deleted
-                                                        ),
-                                                    },
-                                                ]}
-                                            />
-                                        </ChartSection>
-                                    </Col>
-                                    <Col xs={24} lg={12}>
-                                        <ChartSection
-                                            title='Working time by user'
-                                            meaning='Active annotation time per user in the period.'
-                                        >
-                                            <Table
-                                                size='small'
-                                                pagination={false}
-                                                locale={{ emptyText: 'No working-time events' }}
-                                                rowKey={(row) => String(row.user_id)}
-                                                dataSource={summary.working_time_by_user}
-                                                columns={[
-                                                    {
-                                                        title: 'User',
-                                                        dataIndex: 'username',
-                                                        key: 'username',
-                                                        render: (username: string, row) => (
-                                                            username || `user#${row.user_id}`
-                                                        ),
-                                                    },
-                                                    {
-                                                        title: 'Time',
-                                                        dataIndex: 'ms',
-                                                        key: 'ms',
-                                                        render: (ms: number) => formatHours(ms),
-                                                    },
-                                                ]}
-                                            />
-                                        </ChartSection>
-                                    </Col>
-                                </Row>
+                                <div className='cvat-analytics-chart-grid cvat-analytics-chart-grid-2'>
+                                    <ChartSection
+                                        title='Daily object activity'
+                                        meaning='Created vs deleted objects each day in the period.'
+                                    >
+                                        <Table
+                                            size='small'
+                                            pagination={false}
+                                            locale={{ emptyText: 'No object events in this period' }}
+                                            rowKey={(row) => row.date}
+                                            dataSource={summary.objects_by_day}
+                                            columns={[
+                                                { title: 'Date', dataIndex: 'date', key: 'date' },
+                                                { title: 'Created', dataIndex: 'created', key: 'created' },
+                                                { title: 'Deleted', dataIndex: 'deleted', key: 'deleted' },
+                                                {
+                                                    title: 'Net',
+                                                    key: 'net',
+                                                    render: (_: unknown, row: { created: number; deleted: number }) => (
+                                                        row.created - row.deleted
+                                                    ),
+                                                },
+                                            ]}
+                                        />
+                                    </ChartSection>
+                                    <ChartSection
+                                        title='Working time by user'
+                                        meaning='Active annotation time per user in the period.'
+                                    >
+                                        <Table
+                                            size='small'
+                                            pagination={false}
+                                            locale={{ emptyText: 'No working-time events' }}
+                                            rowKey={(row) => String(row.user_id)}
+                                            dataSource={summary.working_time_by_user}
+                                            columns={[
+                                                {
+                                                    title: 'User',
+                                                    dataIndex: 'username',
+                                                    key: 'username',
+                                                    render: (username: string, row) => (
+                                                        username || `user#${row.user_id}`
+                                                    ),
+                                                },
+                                                {
+                                                    title: 'Time',
+                                                    dataIndex: 'ms',
+                                                    key: 'ms',
+                                                    render: (ms: number) => formatHours(ms),
+                                                },
+                                            ]}
+                                        />
+                                    </ChartSection>
+                                </div>
 
                                 <Alert
                                     className='cvat-analytics-legacy-note'
